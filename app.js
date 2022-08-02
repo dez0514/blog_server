@@ -40,7 +40,7 @@ app.get('/', (req, res) => {
 //     console.log(error)
 //   })
 // })
-const port = process.env.PORT || 8081
+const port = process.env.PORT || 3002
 app.listen(port, () => {
   console.log(`${port}端口已开启`)
 })
