@@ -1,9 +1,14 @@
 const express = require('express')
-// const multer = require('multer')
-// const cros = require('cors');
-const app = express()
+const morgan = require('morgan')
+const colors = require('colors')
+const dotenv = require('dotenv')
 const path = require('path')
 const api = require('./router')
+const app = express()
+
+dotenv.config({
+  path: path.join(__dirname, './config/config.env')
+});
 
 app.all('*', function(req, res, next){
   res.header("Access-Control-Allow-Credentials", true)
@@ -17,31 +22,15 @@ app.all('*', function(req, res, next){
 app.use(express.json())
 app.use(express.urlencoded({extended: false}))
 
+app.use(morgan("dev"))
 app.use('/api', api)
 app.use('/imgs', express.static(path.join(__dirname, 'imgs')))
 
 app.get('/', (req, res) => {
-  res.send('Hello World');
+  res.send('api')
 })
-// const upload = multer({ dest: 'uploads/' });
-// app.post('/upload', cros(), upload.single('uploads') ,(req, res) => {
-//   // res.set('Access-Control-Allow-Origin', '*');
-//   console.log('1234')
-//   res.send(`http://localhost:7777/preview/${req.file.filename}`)
-// })
-
-// app.get('/preview/:key',cros() , (req, res) => {
-//   res.sendFile(`/uploads/${req.params.key}`, {
-//     root: __dirname,
-//     headers: {
-//       'Content-Type': 'image/png',
-//     }
-//   }, (error) => {
-//     console.log(error)
-//   })
-// })
-const port = process.env.PORT || 3002
+const port = process.env.PORT
 app.listen(port, () => {
-  console.log(`${port}端口已开启`)
+  console.log(`Server环境：${process.env.NODE_ENV}，端口：${port}`.magenta.bold)
 })
 module.exports = app
