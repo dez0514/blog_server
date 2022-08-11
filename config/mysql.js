@@ -1,7 +1,7 @@
 const mysql = {
-  host: '127.0.0.1',
+  host: 'localhost',
   user: 'root',
-  password: 'Aa123456',
+  password: 'password',
   database: 'blog',
   timezone: 'SYSTEM'
 };

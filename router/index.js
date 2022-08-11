@@ -18,58 +18,88 @@ const sqlTool = require('../utils/handle')
 // 2. year month 归档查询 查 createTime, updateTime
 // 3. keywords 搜索查询 查 title,smallTitle,content,tags 存在
 // 还要查对应条件下的 总条数。。。
-router.get('/article_list', function(req, res, next) {
-    let params = req.query;
-    let { pageSize,pageNum,type } = params;
-    let sql = ''
-    if(!pageSize) { pageSize = 10 }
-    if(!pageNum) { pageSize = 1 }
-    let start =  (pageNum - 1) * pageSize
-    if(!type) {
-        res.json({
-            code: 2,
-            message: '参数有误，请检查参数'
-        })
-        return
+router.get('/article_list', function (req, res, next) {
+  let params = req.query;
+  let {
+    pageSize,
+    pageNum,
+    type
+  } = params;
+  let sql = ''
+  if (!pageSize) {
+    pageSize = 10
+  }
+  if (!pageNum) {
+    pageSize = 1
+  }
+  let start = (pageNum - 1) * pageSize
+  if (!type) {
+    res.json({
+      code: 2,
+      message: '参数有误，请检查参数'
+    })
+    return
+  }
+  if (type === 1) { // 首页
+    let tag = params.tag;
+    if (!tag || tag === 'lastest') {
+      sql = `SELECT * FROM articles limit ${start},${pageSize}`
+    } else {
+      sql = `SELECT * FROM articles FIND_IN_SET(${tag},tags) limit ${start},${pageSize}`
     }
-    if(type === 1) { // 首页
-        let tag = params.tag;
-        if(!tag || tag === 'lastest') {
-            sql = `SELECT * FROM articles limit ${start},${pageSize}`
-        } else {
-            sql = `SELECT * FROM articles FIND_IN_SET(${tag},tags) limit ${start},${pageSize}`
-        }
-    } else if(type === 2){ // 归档
+  } else if (type === 2) { // 归档
 
-    } else if(type === 3) { // 搜索
+  } else if (type === 3) { // 搜索
 
-    }
-    if(!sql) return;
-    sqlTool.queryAll(sql, req, res, next);
+  }
+  if (!sql) return;
+  sqlTool.queryAll(sql, req, res, next);
 });
-router.get('/article_detail', function(req, res, next) {
-    let sql = 'SELECT * FROM articles WHERE id=?'
-    sqlTool.queryById(sql, req, res, next);
+// 不分页
+router.get('/article_all_list', function (req, res, next) {
+  const sql = `SELECT * FROM articles`
+  sqlTool.queryAll(sql, req, res, next);
 });
-router.post('/add_article', function(req, res, next) {
-    let sql = 'INSERT INTO articles(title, smallTitle, banner,author,content,gitlink,tags,createTime) VALUES(?,?,?,?,?,?,?,?)'
-    let params = req.body;
-    const {title, smallTitle, banner,author,content,gitlink,tags} = params
-    const createTime = new Date();
-    const vallist = [title, smallTitle, banner,author,content,gitlink,tags,createTime]
-    sqlTool.add(sql, vallist, res, next);
+
+router.get('/article_detail', function (req, res, next) {
+  let sql = 'SELECT * FROM articles WHERE id=?'
+  sqlTool.queryById(sql, req, res, next);
 });
+router.post('/add_article', function (req, res, next) {
+  let sql = 'INSERT INTO articles(title, author, extra_title, banner, tags, content, git, views, likes, create_time, update_time) VALUES(?,?,?,?,?,?,?,?,?,?,?)'
+  let params = req.body;
+  const {
+    title,
+    author,
+    extra_title,
+    banner,
+    tags,
+    content,
+    git
+  } = params
+  const views = 0,
+    likes = 0;
+  const create_time = new Date();
+  const update_time = new Date();
+  const vallist = [title, author, extra_title, banner, tags, content, git, views, likes, create_time, update_time]
+  sqlTool.add(sql, vallist, res, next);
+});
+
 // 标签列表
-router.get('/tag_list', function(req, res, next) {
-    let sql = 'SELECT * FROM tags'
-    sqlTool.queryAll(sql, req, res, next);
+router.get('/tag_list', function (req, res, next) {
+  let sql = 'SELECT * FROM tags'
+  sqlTool.queryAll(sql, req, res, next);
 });
-router.post('/add_tag', function(req, res, next) {
-    let sql = 'INSERT INTO tags(name, color, icon) VALUES(?,?,?)'
-    let params = req.body;
-    const {name, color, icon} = params
-    const vallist = [name, color, icon]
-    sqlTool.add(sql, vallist, res, next);
+router.post('/add_tag', function (req, res, next) {
+  let sql = 'INSERT INTO tags(name, color, icon) VALUES(?,?,?)'
+  let params = req.body;
+  const {
+    name,
+    color,
+    icon
+  } = params
+  const vallist = [name, color, icon]
+  sqlTool.add(sql, vallist, res, next);
 });
 
 // 图片操作接口
@@ -80,7 +110,7 @@ router.post('/upload', upload.array("file"), (req, res) => {
   // const params = req.body
   // 上传成功再移动到指定目录
   const files = req.files
-  if(files) {
+  if (files) {
     res.json({
       code: '0',
       message: '上传成功'
@@ -94,18 +124,18 @@ router.post('/upload', upload.array("file"), (req, res) => {
 })
 
 // 创建文件夹
-router.post('/mkdir', function(req, res, next) {
+router.post('/mkdir', function (req, res, next) {
   const params = req.body.name
   const isExist = fs.existsSync(`./imgs/${params}`)
-  if(isExist) {
+  if (isExist) {
     res.json({
       code: '-1',
       message: '该目录已存在，请勿重复创建！'
     })
     return
   }
-  fs.mkdir(`./imgs/${params}`, function(err) {
-    if(err) {
+  fs.mkdir(`./imgs/${params}`, function (err) {
+    if (err) {
       res.send(err)
     } else {
       res.json({
@@ -116,10 +146,10 @@ router.post('/mkdir', function(req, res, next) {
   })
 })
 // 删除文件夹
-router.post('/deletedir', function(req, res, next) {
+router.post('/deletedir', function (req, res, next) {
   const params = req.body.name
   const isExist = fs.existsSync(`./imgs/${params}`)
-  if(isExist) {
+  if (isExist) {
     deleteFolder(`./imgs/${params}`, () => {
       res.json({
         code: '0',
@@ -160,10 +190,10 @@ function deleteFolder(path, callback, errorCallback) {
 }
 
 // 删除文件
-router.post('/deletefile', function(req, res, next) {
+router.post('/deletefile', function (req, res, next) {
   const params = req.body.name
   const isExist = fs.existsSync(`./imgs/${params}`)
-  if(isExist) {
+  if (isExist) {
     fs.unlinkSync(`./imgs/${params}`)
     res.json({
       code: '0',
@@ -177,12 +207,12 @@ router.post('/deletefile', function(req, res, next) {
   }
 })
 // 批量删除文件
-router.post('/deletefiles', function(req, res, next) {
+router.post('/deletefiles', function (req, res, next) {
   try {
     const params = req.body.names
     // 传入时 英文逗号隔开
     const nameArr = params.split(',')
-    if(nameArr.length === 0) {
+    if (nameArr.length === 0) {
       res.json({
         code: '-1',
         message: '未选择需要删除的数据'
@@ -192,7 +222,7 @@ router.post('/deletefiles', function(req, res, next) {
     console.log('ppp===', nameArr)
     nameArr.forEach(item => {
       const isExist = fs.existsSync(`./imgs/${item}`)
-      if(isExist) {
+      if (isExist) {
         fs.unlinkSync(`./imgs/${item}`)
       }
     })
@@ -206,13 +236,13 @@ router.post('/deletefiles', function(req, res, next) {
       message: '删除失败'
     })
   }
-  
+
 })
 // 文件列表
-router.post('/filelist', function(req, res, next){
+router.post('/filelist', function (req, res, next) {
   const params = req.body.name
   let path = './imgs'
-  if(params) {
+  if (params) {
     path = path + '/' + params
   }
   const files = fs.readdirSync(path);
@@ -221,7 +251,10 @@ router.post('/filelist', function(req, res, next){
     const filePath = `${path}/${file}`;
     const stats = fs.statSync(filePath);
     const isFolder = stats.isDirectory()
-    data.push({name: file, isFolder})
+    data.push({
+      name: file,
+      isFolder
+    })
   })
   res.json({
     code: '0',
