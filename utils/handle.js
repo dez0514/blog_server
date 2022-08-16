@@ -68,7 +68,7 @@ var sqlTool = {
   //     });
   // },
   queryById: function (sql, req, res, next) {
-    var id = +req.query.id;
+    let id = req.query.id;
     pool.getConnection(function (err, connection) {
       if (err) {
         res.json({
