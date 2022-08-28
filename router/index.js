@@ -3,6 +3,7 @@ const router = express.Router()
 const fs = require('fs')
 const upload = require("./uploadConfig")
 const sqlTool = require('../utils/handle')
+const dayjs = require('dayjs')
 /*
     // insert:'INSERT INTO test(id, name, age) VALUES(?,?,?)',
     // update:'UPDATE test SET name=?, age=? WHERE id=?',
@@ -62,12 +63,12 @@ router.get('/article_all_list', function (req, res, next) {
 });
 
 router.get('/article_detail', function (req, res, next) {
-  let sql = 'SELECT * FROM articles WHERE id=?'
-  sqlTool.queryById(sql, req, res, next);
+  const id = req.query.id;
+  const sql = 'SELECT * FROM articles WHERE id=?'
+  sqlTool.queryById(sql, id, res, next);
 });
 router.post('/add_article', function (req, res, next) {
-  let sql = 'INSERT INTO articles(title, author, extra_title, banner, tags, content, git, views, likes, create_time, update_time) VALUES(?,?,?,?,?,?,?,?,?,?,?)'
-  let params = req.body;
+  const params = req.body;
   const {
     title,
     author,
@@ -77,14 +78,29 @@ router.post('/add_article', function (req, res, next) {
     content,
     git
   } = params
-  const views = 0,
-    likes = 0;
+  const views = 0, likes = 0;
   const create_time = new Date();
-  const update_time = new Date();
-  const vallist = [title, author, extra_title, banner, tags, content, git, views, likes, create_time, update_time]
-  sqlTool.add(sql, vallist, res, next);
+  let sql = ''
+  if (params.id) { // 编辑
+    const update_time = dayjs(new Date()).format('YYYY-MM-DD HH:MM:ss')
+    const temp = { title, author, extra_title, banner, tags, content, git, update_time }
+    const str = Object.keys(temp).map(item => {
+      return `${item}='${temp[item]}'` // 注意字段值包单引号，null又不能包引号，心累
+    }).join(',')
+    sql = `UPDATE articles SET ${str} WHERE id=${params.id}`
+    sqlTool.update(sql, res, next);
+  } else { // 新增
+    sql = 'INSERT INTO articles(title, author, extra_title, banner, tags, content, git, views, likes, create_time, update_time) VALUES(?,?,?,?,?,?,?,?,?,?,?)'
+    const vallist = [title, author, extra_title, banner, tags, content, git, views, likes, create_time]
+    sqlTool.add(sql, vallist, res, next);
+  }
 });
-
+// 删除文章
+router.post('/delete_article', function (req, res, next) {
+  const id = req.body.id;
+  const sql =  `DELETE FROM articles WHERE id=?`
+  sqlTool.delete(sql, id, res, next);
+});
 // 标签列表
 router.get('/tag_list', function (req, res, next) {
   let sql = 'SELECT * FROM tags'
@@ -113,6 +129,7 @@ router.post('/upload', upload.array("file"), (req, res) => {
   if (files) {
     res.json({
       code: '0',
+      data: files,
       message: '上传成功'
     })
   } else {

@@ -35,40 +35,60 @@ var sqlTool = {
       });
     });
   },
-  // delete: function(req, res, next) {
-  //     pool.getConnection(function(err, connection) {
-  //         var id = +req.query.id;
-  //         connection.query(sql.delete, id, function(err, result) {
-  //             if (result.affectedRows > 0) {
-  //                 result = 'delete';
-  //             } else {
-  //                 result = undefined;
-  //             }
-  //             json(res, result);
-  //             connection.release();
-  //         });
-  //     });
-  // },
-  // update: function(req, res, next) {
-  //     var param = req.body;
-  //     if (param.name == null || param.age == null || param.id == null) {
-  //         json(res, undefined);
-  //         return;
-  //     }
-  //     pool.getConnection(function(err, connection) {
-  //         connection.query(sql.update, [param.name, param.age, +param.id], function(err, result) {
-  //             if (result.affectedRows > 0) {
-  //                 result = 'update'
-  //             } else {
-  //                 result = undefined;
-  //             }
-  //             json(res, result);
-  //             connection.release();
-  //         });
-  //     });
-  // },
-  queryById: function (sql, req, res, next) {
-    let id = req.query.id;
+  update: function (sql, res, next) {
+    pool.getConnection(function (err, connection) {
+      if (err) {
+        res.json({
+          code: 1,
+          message: err,
+        });
+        return
+      }
+      connection.query(sql, function (error, result) {
+        if (error) {
+          console.log(error)
+          res.json({
+            code: 1,
+            message: error,
+          });
+          return
+        }
+        res.json({
+          code: 0,
+          message: '编辑成功',
+          data: result
+        });
+        connection.release();
+      });
+    });
+  },
+  delete: function (sql, id, res, next) {
+    pool.getConnection(function (err, connection) {
+      if (err) {
+        res.json({
+          code: 1,
+          message: err,
+        });
+        return
+      }
+      connection.query(sql, id, function (error, result) {
+        if (err) {
+          res.json({
+            code: 1,
+            message: error,
+          });
+          return
+        }
+        res.json({
+          code: 0,
+          message: '删除成功',
+          data: result
+        });
+        connection.release();
+      });
+    });
+  },
+  queryById: function (sql, id, res, next) {
     pool.getConnection(function (err, connection) {
       if (err) {
         res.json({
