@@ -122,7 +122,7 @@ var sqlTool = {
       });
     });
   },
-  queryAll: function (sql, req, res, next) {
+  queryAll: function (sql, req, res, next, isPage=false) {
     pool.getConnection(function (err, connection) {
       if (err) {
         res.json({
@@ -139,11 +139,24 @@ var sqlTool = {
           });
           return
         }
-        res.json({
-          code: 0,
-          message: '查询成功',
-          data: result
-        });
+        console.log('result===', JSON.stringify(result))
+        if(isPage) {
+          // 分页时 result = [[{"COUNT(*)":3}],[...data]]
+          const total = result[0][0]['COUNT(*)'] || 0
+          const data = result[1] || []
+          res.json({
+            code: 0,
+            message: '查询成功',
+            data,
+            total
+          });
+        } else {
+          res.json({
+            code: 0,
+            message: '查询成功',
+            data: result
+          });
+        }
         connection.release();
       });
     });

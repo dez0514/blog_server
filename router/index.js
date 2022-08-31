@@ -26,6 +26,7 @@ router.get('/article_list', function (req, res, next) {
     pageNum,
     type
   } = params;
+  console.log('type===', type)
   let sql = ''
   if (!pageSize) {
     pageSize = 10
@@ -41,20 +42,21 @@ router.get('/article_list', function (req, res, next) {
     })
     return
   }
-  if (type === 1) { // 首页
+  if (Number(type) === 1) { // 首页
     let tag = params.tag;
     if (!tag || tag === 'lastest') {
-      sql = `SELECT * FROM articles limit ${start},${pageSize}`
+      sql = `SELECT COUNT(*) FROM articles;SELECT * FROM articles limit ${start},${pageSize}`
     } else {
       sql = `SELECT * FROM articles FIND_IN_SET(${tag},tags) limit ${start},${pageSize}`
     }
-  } else if (type === 2) { // 归档
+  } else if (Number(type) === 2) { // 归档 createTime updateTime
 
-  } else if (type === 3) { // 搜索
+  } else if (Number(type) === 3) { // 搜索 keyword
 
   }
+  console.log('sql===', sql)
   if (!sql) return;
-  sqlTool.queryAll(sql, req, res, next);
+  sqlTool.queryAll(sql, req, res, next, true);
 });
 // 不分页
 router.get('/article_all_list', function (req, res, next) {

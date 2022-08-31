@@ -3,6 +3,7 @@ const mysql = {
   user: 'root',
   password: 'password',
   database: 'blog',
-  timezone: 'SYSTEM'
+  timezone: 'SYSTEM',
+  multipleStatements: true // 一次查询多条sql
 };
 module.exports = mysql;
