@@ -13,6 +13,7 @@ var sqlTool = {
           code: 1,
           message: err,
         });
+        connection.release();
         return
       }
       connection.query(sql, [...vallist], function (error, result) {
@@ -22,6 +23,7 @@ var sqlTool = {
             code: 1,
             message: error,
           });
+          connection.release();
           return
         }
         console.log(result)
@@ -42,6 +44,7 @@ var sqlTool = {
           code: 1,
           message: err,
         });
+        connection.release();
         return
       }
       connection.query(sql, function (error, result) {
@@ -51,6 +54,7 @@ var sqlTool = {
             code: 1,
             message: error,
           });
+          connection.release();
           return
         }
         res.json({
@@ -69,6 +73,7 @@ var sqlTool = {
           code: 1,
           message: err,
         });
+        connection.release();
         return
       }
       connection.query(sql, id, function (error, result) {
@@ -77,6 +82,7 @@ var sqlTool = {
             code: 1,
             message: error,
           });
+          connection.release();
           return
         }
         res.json({
@@ -95,6 +101,7 @@ var sqlTool = {
           code: 1,
           message: err,
         });
+        connection.release();
         return
       }
       connection.query(sql, id, function (error, result) {
@@ -103,6 +110,7 @@ var sqlTool = {
             code: 1,
             message: error,
           });
+          connection.release();
           return
         }
         if (result.length > 0) {
@@ -129,6 +137,7 @@ var sqlTool = {
           code: 1,
           message: err,
         });
+        connection.release();
         return
       }
       connection.query(sql, function (error, result) {
@@ -137,6 +146,7 @@ var sqlTool = {
             code: 1,
             message: error,
           });
+          connection.release();
           return
         }
         console.log('result===', JSON.stringify(result))

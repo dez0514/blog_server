@@ -92,7 +92,7 @@ router.post('/add_article', function (req, res, next) {
     sql = `UPDATE articles SET ${str} WHERE id=${params.id}`
     sqlTool.update(sql, res, next);
   } else { // 新增
-    sql = 'INSERT INTO articles(title, author, extra_title, banner, tags, content, git, views, likes, create_time, update_time) VALUES(?,?,?,?,?,?,?,?,?,?,?)'
+    sql = 'INSERT INTO articles(title, author, extra_title, banner, tags, content, git, views, likes, create_time) VALUES(?,?,?,?,?,?,?,?,?,?)'
     const vallist = [title, author, extra_title, banner, tags, content, git, views, likes, create_time]
     sqlTool.add(sql, vallist, res, next);
   }
