@@ -44,14 +44,18 @@ router.get('/article_list', function (req, res, next) {
     return
   }
   let sql = ''
+  let tagArr = []
+  let keywordArr = []
   if (Number(type) !== 2) { // 首页tag精确查找, 搜索keyword检索匹配查找
     let tagWhere = ''
     let keywordWhere = ''
     if(tag && tag !== 'lastest') {
-      tagWhere = `FIND_IN_SET('${tag}', tags)` // 改用占位符解决
+      tagWhere = `FIND_IN_SET(?, tags)` // 改用占位符解决
+      tagArr = [tag]
     }
     if(keyword) {
-      keywordWhere = `title like '%${keyword}%' OR extra_title like '%${keyword}%' OR tags like '%${keyword}%'` // 改用占位符解决
+      keywordWhere = `(title like concat('%',?,'%') OR extra_title like concat('%',?,'%') OR tags like concat('%',?,'%'))` // 改用占位符解决
+      keywordArr = [keyword, keyword, keyword]
     }
     // 如果tag 和 keyword 都存在就是取交集 同时满足条件的数据
     let hasWhere = ''
@@ -68,8 +72,9 @@ router.get('/article_list', function (req, res, next) {
 
   }
   console.log('sql===', sql)
+  const valArr = [...tagArr, ...keywordArr]
   if (!sql) return;
-  sqlTool.queryAll(sql, req, res, next, true);
+  sqlTool.queryAll(sql,valArr, req, res, next, true);
 });
 // 不分页
 router.get('/article_all_list', function (req, res, next) {

@@ -130,7 +130,7 @@ var sqlTool = {
       });
     });
   },
-  queryAll: function (sql, req, res, next, isPage=false) {
+  queryAll: function (sql, valArr, req, res, next, isPage=false) {
     pool.getConnection(function (err, connection) {
       if (err) {
         res.json({
@@ -140,7 +140,7 @@ var sqlTool = {
         connection.release();
         return
       }
-      connection.query(sql, function (error, result) {
+      connection.query(sql, [...valArr], function (error, result) {
         if (err || !result) {
           res.json({
             code: 1,
