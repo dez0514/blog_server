@@ -35,7 +35,7 @@ var sqlTool = {
       });
     });
   },
-  update: function (sql, res, next) {
+  update: function (sql, vallist, res, next) {
     pool.getConnection(function (err, connection) {
       if (err) {
         res.json({
@@ -44,7 +44,7 @@ var sqlTool = {
         });
         return
       }
-      connection.query(sql, function (error, result) {
+      connection.query(sql, [...vallist], function (error, result) {
         if (error) {
           console.log(error)
           res.json({
@@ -132,18 +132,19 @@ var sqlTool = {
         return
       }
       connection.query(sql, function (error, result) {
-        if (err) {
+        if (err || !result) {
           res.json({
             code: 1,
             message: error,
           });
           return
         }
+        console.log('result.length===', result.length)
         console.log('result===', JSON.stringify(result))
         if(isPage) {
           // 分页时 result = [[{"COUNT(*)":3}],[...data]]
-          const total = result[0][0]['COUNT(*)'] || 0
-          const data = result[1] || []
+          const total = (result && result[0] && result[0][0] && (result[0][0]['COUNT(*)'] || result[0][0]['COUNT(1)'])) || 0
+          const data = (result && result.length > 1) ? result[1] : []
           res.json({
             code: 0,
             message: '查询成功',

@@ -24,10 +24,11 @@ router.get('/article_list', function (req, res, next) {
   let {
     pageSize,
     pageNum,
-    type
+    type,
+    tag,
+    keyword
   } = params;
   console.log('type===', type)
-  let sql = ''
   if (!pageSize) {
     pageSize = 10
   }
@@ -42,16 +43,28 @@ router.get('/article_list', function (req, res, next) {
     })
     return
   }
-  if (Number(type) === 1) { // 首页
-    let tag = params.tag;
-    if (!tag || tag === 'lastest') {
-      sql = `SELECT COUNT(*) FROM articles;SELECT * FROM articles limit ${start},${pageSize}`
-    } else {
-      sql = `SELECT * FROM articles FIND_IN_SET(${tag},tags) limit ${start},${pageSize}`
+  let sql = ''
+  if (Number(type) !== 2) { // 首页tag精确查找, 搜索keyword检索匹配查找
+    let tagWhere = ''
+    let keywordWhere = ''
+    if(tag && tag !== 'lastest') {
+      tagWhere = `FIND_IN_SET('${tag}', tags)` // 改用占位符解决
     }
-  } else if (Number(type) === 2) { // 归档 createTime updateTime
-
-  } else if (Number(type) === 3) { // 搜索 keyword
+    if(keyword) {
+      keywordWhere = `title like '%${keyword}%' OR extra_title like '%${keyword}%' OR tags like '%${keyword}%'` // 改用占位符解决
+    }
+    // 如果tag 和 keyword 都存在就是取交集 同时满足条件的数据
+    let hasWhere = ''
+    let hasAnd = ''
+    if(tagWhere !== '' && keywordWhere !== '') { // 都不空
+      hasWhere = 'WHERE'
+      hasAnd = 'AND'
+    } else if((tagWhere === '' && keywordWhere !== '') || (tagWhere !== '' && keywordWhere === '')) { // 一个空 一个不空
+      hasWhere = 'WHERE'
+    }
+    const parseStr = `${hasWhere} ${tagWhere} ${hasAnd} ${keywordWhere}`
+    sql = `SELECT COUNT(*) FROM articles ${parseStr}; SELECT * FROM articles ${parseStr} limit ${start},${pageSize};`
+  } else { // 归档 createTime updateTime
 
   }
   console.log('sql===', sql)
@@ -85,14 +98,16 @@ router.post('/add_article', function (req, res, next) {
   let sql = ''
   if (params.id) { // 编辑
     const update_time = dayjs(new Date()).format('YYYY-MM-DD HH:MM:ss')
-    const temp = { title, author, extra_title, banner, tags, content, git, update_time }
+    const temp = { title, author, extra_title, banner, tags, git, update_time, content }
     const str = Object.keys(temp).map(item => {
-      return `${item}='${temp[item]}'` // 注意字段值包单引号，null又不能包引号，心累
+      return `${item}=?` // "${temp[item]}"
     }).join(',')
+    const values = Object.values(temp)
     sql = `UPDATE articles SET ${str} WHERE id=${params.id}`
-    sqlTool.update(sql, res, next);
+    console.log('sql==', sql)
+    sqlTool.update(sql,values, res, next);
   } else { // 新增
-    sql = 'INSERT INTO articles(title, author, extra_title, banner, tags, content, git, views, likes, create_time, update_time) VALUES(?,?,?,?,?,?,?,?,?,?,?)'
+    sql = 'INSERT INTO articles(title, author, extra_title, banner, tags, content, git, views, likes, create_time) VALUES(?,?,?,?,?,?,?,?,?,?)'
     const vallist = [title, author, extra_title, banner, tags, content, git, views, likes, create_time]
     sqlTool.add(sql, vallist, res, next);
   }
