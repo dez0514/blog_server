@@ -26,7 +26,9 @@ router.get('/article_list', function (req, res, next) {
     pageNum,
     type,
     tag,
-    keyword
+    keyword,
+    year,
+    month
   } = params;
   console.log('type===', type)
   if (!pageSize) {
@@ -46,7 +48,8 @@ router.get('/article_list', function (req, res, next) {
   let sql = ''
   let tagArr = []
   let keywordArr = []
-  if (Number(type) !== 2) { // 首页tag精确查找, 搜索keyword检索匹配查找
+  let sqlValArr = []
+  if (type !== 'archive') { // 首页tag精确查找, 搜索keyword检索匹配查找
     let tagWhere = ''
     let keywordWhere = ''
     if(tag && tag !== 'lastest') {
@@ -54,7 +57,7 @@ router.get('/article_list', function (req, res, next) {
       tagArr = [tag]
     }
     if(keyword) {
-      keywordWhere = `(title like concat('%',?,'%') OR extra_title like concat('%',?,'%') OR tags like concat('%',?,'%'))` // 改用占位符解决
+      keywordWhere = `(title like CONCAT('%',?,'%') OR extra_title like CONCAT('%',?,'%') OR tags like CONCAT('%',?,'%'))` // 改用占位符解决
       keywordArr = [keyword, keyword, keyword]
     }
     // 如果tag 和 keyword 都存在就是取交集 同时满足条件的数据
@@ -67,19 +70,35 @@ router.get('/article_list', function (req, res, next) {
       hasWhere = 'WHERE'
     }
     const parseStr = `${hasWhere} ${tagWhere} ${hasAnd} ${keywordWhere}`
-    sql = `SELECT COUNT(*) FROM articles ${parseStr}; SELECT * FROM articles ${parseStr} limit ${start},${pageSize};`
-  } else { // 归档 createTime updateTime
-
+    sql = `SELECT COUNT(*) FROM articles ${parseStr}; SELECT * FROM articles ${parseStr} ORDER BY IFNULL(update_time, create_time) DESC limit ${start},${pageSize};`
+    sqlValArr = [...tagArr, ...keywordArr, ...tagArr, ...keywordArr] // 几个问号 就要写几个值
+  } else { // 归档 type === 2, createTime updateTime
+    // year=0 全部, month=0 全年， year=2022，month=1到12
+    let dateWhere = ''
+    let dateArr = []
+    if(year && Number(year) > 0) {
+      if (!month || Number(month) === 0) {
+        // 全年
+        dateWhere = `WHERE year(IFNULL(update_time, create_time)) = ?`
+        dateArr = [year]
+      } else {
+        // year, month
+        dateWhere = `WHERE year(IFNULL(update_time, create_time)) = ? AND month(IFNULL(update_time, create_time)) = ?`
+        dateArr = [year, month]
+      }
+    }
+    sql = `SELECT COUNT(*) FROM articles ${dateWhere};
+    SELECT * FROM articles ${dateWhere} ORDER BY IFNULL(update_time, create_time) DESC limit ${start},${pageSize};`
+    sqlValArr = [...dateArr, ...dateArr] // 几个问号 就要写几个值
   }
-  console.log('sql===', sql)
-  const valArr = [...tagArr, ...keywordArr]
+  // console.log('sql===', sql)
   if (!sql) return;
-  sqlTool.queryAll(sql,valArr, req, res, next, true);
+  sqlTool.queryAll(sql,sqlValArr, req, res, next, true);
 });
 // 不分页
 router.get('/article_all_list', function (req, res, next) {
   const sql = `SELECT * FROM articles`
-  sqlTool.queryAll(sql, req, res, next);
+  sqlTool.queryAll(sql, [], req, res, next);
 });
 
 router.get('/article_detail', function (req, res, next) {
@@ -99,21 +118,19 @@ router.post('/add_article', function (req, res, next) {
     git
   } = params
   const views = 0, likes = 0;
-  const create_time = new Date();
   let sql = ''
   if (params.id) { // 编辑
-    const update_time = dayjs(new Date()).format('YYYY-MM-DD HH:MM:ss')
+    const update_time = dayjs(new Date()).format('YYYY-MM-DD HH:mm:ss')
+    console.log('update_time===', update_time)
     const temp = { title, author, extra_title, banner, tags, git, update_time, content }
-    const str = Object.keys(temp).map(item => {
-      return `${item}=?` // "${temp[item]}"
-    }).join(',')
+    const str = Object.keys(temp).map(item => `${item}=?`).join(',')
     const values = Object.values(temp)
     sql = `UPDATE articles SET ${str} WHERE id=${params.id}`
     console.log('sql==', sql)
     sqlTool.update(sql,values, res, next);
   } else { // 新增
-    sql = 'INSERT INTO articles(title, author, extra_title, banner, tags, content, git, views, likes, create_time) VALUES(?,?,?,?,?,?,?,?,?,?)'
-    const vallist = [title, author, extra_title, banner, tags, content, git, views, likes, create_time]
+    sql = 'INSERT INTO articles(title, author, extra_title, banner, tags, content, git, views, likes) VALUES(?,?,?,?,?,?,?,?,?)'
+    const vallist = [title, author, extra_title, banner, tags, content, git, views, likes]
     sqlTool.add(sql, vallist, res, next);
   }
 });

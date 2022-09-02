@@ -149,8 +149,8 @@ var sqlTool = {
           connection.release();
           return
         }
-        console.log('result.length===', result.length)
-        console.log('result===', JSON.stringify(result))
+        // console.log('result.length===', result.length)
+        // console.log('result===', JSON.stringify(result))
         if(isPage) {
           // 分页时 result = [[{"COUNT(*)":3}],[...data]]
           const total = (result && result[0] && result[0][0] && (result[0][0]['COUNT(*)'] || result[0][0]['COUNT(1)'])) || 0
