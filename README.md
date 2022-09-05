@@ -58,3 +58,31 @@
 |  id | int unsigned | no | pri | null | auto_increment |
 |  article_id | int | no | uni | null | -- |
 |  tag_id | int | no | -- | null | -- |
+
+### helper
+cmd：
+1. mysql -u root -p
+2. ******
+命令：
+show databases;  // 显示所有数据库
+create database xxx; // 创建数据库
+use xxx; // 进入数据库
+// 创建表 tags
+create table if not exists `tags` (`id` int unsigned auto_increment, `name` varchar(40) not null,  `color` varchar(100) not null, primary key(`id`))engine=InnoDB Default charset=utf8;
+
+vscode 连接 mysql 修改一下密码
+ALTER USER 'root'@'localhost' IDENTIFIED WITH mysql_native_password BY ******;
+
+INSERT INTO tags (name, color) VALUES ("vue", "red");
+
+CREATE TABLE tags(id INT NOT NULL AUTO_INCREMENT, name VARCHAR(40) NOT NULL, color VARCHAR(100) NOT NULL, icon VARCHAR(100) NOT NULL, create_time DATE, update_time DATE, PRIMARY KEY ( id ))ENGINE=InnoDB DEFAULT CHARSET=utf8;
+
+CREATE TABLE articles(id INT NOT NULL AUTO_INCREMENT, title VARCHAR(100) NOT NULL, extra_title VARCHAR(100) NOT NULL, banner VARCHAR(100) NOT NULL, tags VARCHAR(100) NOT NULL, content BIGINT NOT NULL,git VARCHAR(100) NOT NULL , views INT, likes INT, create_time DATE, update_time DATE, PRIMARY KEY ( id ))ENGINE=InnoDB DEFAULT CHARSET=utf8;
+
+CREATE TABLE relation_article_tag(id INT NOT NULL AUTO_INCREMENT,  article_id INT NOT NULL, tag_id INT NOT NULL, PRIMARY KEY ( id ))ENGINE=InnoDB DEFAULT CHARSET=utf8;
+//修改列属性
+ALTER TABLE articles CHANGE COLUMN id
+id INT UNSIGNED AUTO_INCREMENT;
+
+alter table tags change column name
+name varchar(40) not NULL unique;
