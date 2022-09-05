@@ -4,17 +4,9 @@ const fs = require('fs')
 const upload = require("./uploadConfig")
 const sqlTool = require('../utils/handle')
 const dayjs = require('dayjs')
-/*
-    // insert:'INSERT INTO test(id, name, age) VALUES(?,?,?)',
-    // update:'UPDATE test SET name=?, age=? WHERE id=?',
-    // delete: 'DELETE FROM test WHERE id=?',
-    // queryById: 'SELECT * FROM test WHERE id=?',
-    // queryAll: 'SELECT * FROM articles'
-    search: 'select * from user where concat(name,idcard,sex,···)  like '%word%''
-*/
+const qs = require('qs')
 // code: 0 success, 1 err, 2 参数错误
-
-// 文章列表 都做分页 3处接口 type 区分 0，1，2
+// 文章列表 都做分页 3处接口 type 区分归档查询
 // 1. 首页 分类查询 最新就是全部，其他 按照 tags 存在就有查询，字段用tag
 // 2. year month 归档查询 查 createTime, updateTime
 // 3. keywords 搜索查询 查 title,smallTitle,content,tags 存在
@@ -35,21 +27,14 @@ router.get('/article_list', function (req, res, next) {
     pageSize = 10
   }
   if (!pageNum) {
-    pageSize = 1
+    pageNum = 1
   }
   let start = (pageNum - 1) * pageSize
-  if (!type) {
-    res.json({
-      code: 2,
-      message: '参数有误，请检查参数'
-    })
-    return
-  }
   let sql = ''
   let tagArr = []
   let keywordArr = []
   let sqlValArr = []
-  if (type !== 'archive') { // 首页tag精确查找, 搜索keyword检索匹配查找
+  if (!type || type !== 'archive') { // 首页tag精确查找, 搜索keyword检索匹配查找
     let tagWhere = ''
     let keywordWhere = ''
     if(tag && tag !== 'lastest') {
@@ -72,7 +57,7 @@ router.get('/article_list', function (req, res, next) {
     const parseStr = `${hasWhere} ${tagWhere} ${hasAnd} ${keywordWhere}`
     sql = `SELECT COUNT(*) FROM articles ${parseStr}; SELECT * FROM articles ${parseStr} ORDER BY IFNULL(update_time, create_time) DESC limit ${start},${pageSize};`
     sqlValArr = [...tagArr, ...keywordArr, ...tagArr, ...keywordArr] // 几个问号 就要写几个值
-  } else { // 归档 type === 2, createTime updateTime
+  } else { // 归档 type === 'archive'; createTime updateTime
     // year=0 全部, month=0 全年， year=2022，month=1到12
     let dateWhere = ''
     let dateArr = []
@@ -108,16 +93,7 @@ router.get('/article_detail', function (req, res, next) {
 });
 router.post('/add_article', function (req, res, next) {
   const params = req.body;
-  const {
-    title,
-    author,
-    extra_title,
-    banner,
-    tags,
-    content,
-    git
-  } = params
-  const views = 0, likes = 0;
+  const { title, author, extra_title, banner, tags, content, git } = params
   let sql = ''
   if (params.id) { // 编辑
     const update_time = dayjs(new Date()).format('YYYY-MM-DD HH:mm:ss')
@@ -129,8 +105,8 @@ router.post('/add_article', function (req, res, next) {
     console.log('sql==', sql)
     sqlTool.update(sql,values, res, next);
   } else { // 新增
-    sql = 'INSERT INTO articles(title, author, extra_title, banner, tags, content, git, views, likes) VALUES(?,?,?,?,?,?,?,?,?)'
-    const vallist = [title, author, extra_title, banner, tags, content, git, views, likes]
+    sql = 'INSERT INTO articles(title, author, extra_title, banner, tags, content, git) VALUES(?,?,?,?,?,?,?)'
+    const vallist = [title, author, extra_title, banner, tags, content, git]
     sqlTool.add(sql, vallist, res, next);
   }
 });
@@ -141,22 +117,61 @@ router.post('/delete_article', function (req, res, next) {
   sqlTool.delete(sql, id, res, next);
 });
 // 标签列表
-router.get('/tag_list', function (req, res, next) {
+router.get('/tag_all_list', function (req, res, next) {
   let sql = 'SELECT * FROM tags'
-  sqlTool.queryAll(sql, req, res, next);
+  sqlTool.queryAll(sql, [], req, res, next);
+});
+// 分页
+router.get('/tag_list', function (req, res, next) {
+  let params = req.query;
+  let { pageSize, pageNum } = params
+  if (!pageSize) { pageSize = 10 }
+  if (!pageNum) { pageNum = 1 }
+  let start = (pageNum - 1) * pageSize
+  let sql = `SELECT COUNT(*) FROM tags; SELECT * FROM tags limit ${start},${pageSize};`
+  sqlTool.queryAll(sql, [], req, res, next, true);
 });
 router.post('/add_tag', function (req, res, next) {
-  let sql = 'INSERT INTO tags(name, color, icon) VALUES(?,?,?)'
   let params = req.body;
-  const {
-    name,
-    color,
-    icon
-  } = params
+  const { name, color, icon, id } = params
   const vallist = [name, color, icon]
-  sqlTool.add(sql, vallist, res, next);
+  let sql = ''
+  if(id) { // 编辑
+    sql = `UPDATE tags SET name=?, color=?, icon=? WHERE id=${id}`
+    sqlTool.update(sql, vallist, res, next);
+  } else {
+    sql = 'INSERT INTO tags(name, color, icon) VALUES(?,?,?)'
+    sqlTool.add(sql, vallist, res, next);
+  }
 });
-
+// 批量
+router.post('/add_taglist', function (req, res, next) {
+  const params = req.body;
+  const { taglist } = qs.parse(params)
+  // console.log('taglist==', taglist)
+  if(!Array.isArray(taglist)) {
+    res.json({
+      code: 1,
+      message: '参数错误!'
+    })
+    return
+  }
+  let vq = ''
+  let temp = []
+  taglist.forEach((item, index) => {
+    const { name, color, icon } = item
+    const vallist = [name, color, icon]
+    vq = vq + ((index ===  taglist.length - 1) ? '(?,?,?)' : '(?,?,?),')
+    temp = temp.concat(vallist)
+  })
+  let sql = `INSERT INTO tags(name, color, icon) VALUES ${vq}`
+  sqlTool.add(sql, temp, res, next);
+});
+router.post('/delete_tag', function (req, res, next) {
+  const id = req.body.id;
+  const sql =  `DELETE FROM tags WHERE id=?`
+  sqlTool.delete(sql, id, res, next);
+});
 // 图片操作接口
 // 上传图片
 router.post('/upload', upload.array("file"), (req, res) => {
