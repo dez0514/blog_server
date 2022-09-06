@@ -52,12 +52,18 @@
 |  icon | varchar(100) | no | -- | null | -- |
 
 
-#### relation_article_tag
+#### article_tag
 |  Field  |  Type  |  Null  |  Key  | Default | Extra |
 |  :----: | :----: | :----: | :----: | :----: | :----: |
 |  id | int unsigned | no | pri | null | auto_increment |
 |  article_id | int | no | uni | null | -- |
 |  tag_id | int | no | -- | null | -- |
+|  tag_name | varchar(40) | no | -- | null | -- |
+#### article_tag 关系表逻辑梳理
+1.文章查询显示标签的时候，可能要获取标签的其他信息显示，文章表的一个字段无法存。
+2.删除标签时，要干掉文章表里的该标签
+3.新增文章时，文章添加几个标签，就往关系表存几条数据.
+4.删除文章时，根据文章id, 删除关联表里的所有文章id与之相等的数据。
 
 ### helper
 cmd：
@@ -79,7 +85,7 @@ CREATE TABLE tags(id INT NOT NULL AUTO_INCREMENT, name VARCHAR(40) NOT NULL, col
 
 CREATE TABLE articles(id INT NOT NULL AUTO_INCREMENT, title VARCHAR(100) NOT NULL, extra_title VARCHAR(100) NOT NULL, banner VARCHAR(100) NOT NULL, tags VARCHAR(100) NOT NULL, content BIGINT NOT NULL,git VARCHAR(100) NOT NULL , views INT, likes INT, create_time DATE, update_time DATE, PRIMARY KEY ( id ))ENGINE=InnoDB DEFAULT CHARSET=utf8;
 
-CREATE TABLE relation_article_tag(id INT NOT NULL AUTO_INCREMENT,  article_id INT NOT NULL, tag_id INT NOT NULL, PRIMARY KEY ( id ))ENGINE=InnoDB DEFAULT CHARSET=utf8;
+CREATE TABLE article_tag(id INT NOT NULL AUTO_INCREMENT,  article_id INT NOT NULL, tag_id INT NOT NULL, PRIMARY KEY ( id ))ENGINE=InnoDB DEFAULT CHARSET=utf8;
 //修改列属性
 ALTER TABLE articles CHANGE COLUMN id
 id INT UNSIGNED AUTO_INCREMENT;

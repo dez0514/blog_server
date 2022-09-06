@@ -5,6 +5,9 @@ var mysqlconfig = require('../config/mysql');
 var poolextend = require('./poolextend');
 // 使用连接池，提升性能
 var pool = mysql.createPool(poolextend({}, mysqlconfig));
+// todo: 1.改成await写法 返回出去。
+//       2.查完不一定就立马响应回去，可能还要查别的，要控制是否响应，最好结合todo1, 将响应放在调用的地方写。
+
 var sqlTool = {
   add: function (sql, vallist, res, next) {
     pool.getConnection(function (err, connection) {
