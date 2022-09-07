@@ -12,8 +12,8 @@ router.post('/register',async function (req, res) {
     const { username, password } = params
     const sqlQuery = `SELECT username, password FROM users WHERE username=?;`
     const data = await query(sqlQuery, username)
-    // console.log(data)
-    if(data) {
+    console.log(data)
+    if(data && data.length > 0) {
       json(res, 1, null, '用户已存在!')
       return
     }
@@ -34,7 +34,7 @@ router.post('/login', async function (req, res) {
     const sqlQuery = `SELECT username, password FROM users WHERE username=?;`
     const data = await query(sqlQuery, username)
     console.log(data[0])
-    if(!data || !data[0]) {
+    if(!data || data.length === 0) {
       json(res, 1, null, '用户不存在!')
       return
     }
