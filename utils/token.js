@@ -1,7 +1,6 @@
 const jwt = require('jsonwebtoken');
 const NodeRSA = require('node-rsa');
 const crypto = require('crypto');
-const models = require('@db/index');
 
 // const secret = 'token'; // 密钥，不能丢
 const secret = new NodeRSA({
@@ -38,7 +37,7 @@ const getToken = (ctx, userInfo, time) => {
         token,
         userId: userInfo.id
     };
-    models.onlineToken.create(data);
+    // models.onlineToken.create(data);
 
     // token加密
     const cipher = crypto.createCipheriv(ALGORITHM, key, iv);
