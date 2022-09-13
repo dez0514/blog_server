@@ -4,6 +4,7 @@ const router = express.Router()
 const query = require('../utils/pool_async')
 const json = require('../utils/response')
 const jwt = require('jsonwebtoken')
+const tokenjs = require('../utils/token')
 
 // 注册
 router.post('/register',async function (req, res) {
@@ -44,8 +45,13 @@ router.post('/login', async function (req, res) {
     }
     // todo: jwt
     // 登陆成功生成 token 返回给客户端 第一个参数 是 组 ，第二个是 私钥
-    const token = jwt.sign({ username }, 'zwdisagoodboy')
-    json(res, 0, { token }, '登录成功!')
+    const { token, encrypted } = tokenjs.getToken({ username }, 60) // 存未加密的 ，响应加密的
+    // const token = jwt.sign({ username }, 'zwdisagoodboy')
+    const updateSql = `UPDATE users SET token=? WHERE username=?;`
+    const updateResult = await query(updateSql, [token, username])
+    if (Number(updateResult.affectedRows) === 1) {
+      json(res, 0, { token: encrypted, userinfo: { username } }, '登录成功!')
+    }
   } catch(err) {
     json(res, 1, err, '登录失败!')
   }

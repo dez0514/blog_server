@@ -22,10 +22,9 @@ app.all('*', function(req, res, next){
   // res.setHeader('Content-Type', 'application/json;charset=utf-8')
 
   // res.header('Access-Control-Allow-Headers', 'X-Requested-With, mytoken')
-  // res.header('Access-Control-Allow-Headers', 'X-Requested-With, Authorization')
-  // res.header('Access-Control-Allow-Headers', 'Content-Type,Content-Length, Authorization, Accept,X-Requested-With')
+  res.header('Access-Control-Allow-Headers', 'X-Requested-With, Authorization')
+  res.header('Access-Control-Allow-Headers', 'Content-Type, Content-Length, Authorization, Accept,X-Requested-With')
   // res.header('X-Powered-By', ' 3.2.1')
-  if (req.method == 'OPTIONS') res.send(200)
   next()
 })
 
