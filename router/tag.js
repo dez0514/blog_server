@@ -2,8 +2,12 @@ const express = require('express')
 const router = express.Router()
 const sqlTool = require('../utils/handle')
 const qs = require('qs')
+const tokenjs = require('../utils/token')
 // 标签列表
 router.get('/tag_all_list', function (req, res, next) {
+  // console.log(req.headers.authorization)
+  const isTokenValid = tokenjs.checkToken(req.headers.authorization)
+  console.log('isTokenValid==', isTokenValid)
   let sql = 'SELECT * FROM tags'
   sqlTool.queryAll(sql, [], req, res, next);
 });

@@ -53,6 +53,7 @@ const checkToken = (tokens) => {
     // } else {
     //     ctx.remove('refresh');
     // }
+    console.log('decoded===', decoded)
     return !(decoded && decoded.exp <= new Date() / 1000);
 };
 
