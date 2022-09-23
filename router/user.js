@@ -43,12 +43,7 @@ router.post('/login', async function (req, res) {
       json(res, 1, null, '用户名或密码不正确!')
       return
     }
-    // todo: jwt
-    // 登陆成功生成 token 返回给客户端 第一个参数 是 组 ，第二个是 私钥
     const { token, encrypted } = tokenjs.getToken({ username }, 6000) // 存未加密的 ，响应加密的
-    // const token = jwt.sign({ username }, 'zwdisagoodboy')
-    // console.log('token==', token)
-    // console.log('encrypted==', encrypted)
     const updateSql = `UPDATE users SET token=? WHERE username=?;`
     const updateResult = await query(updateSql, [token, username])
     console.log('updateResult===', updateResult)

@@ -19,9 +19,7 @@ const iv = Buffer.alloc(16, 16); // 初始化向量。
  */
 const getToken = (userInfo, time) => {
     // 创建token并导出
-    const token = jwt.sign(userInfo, secret, {
-      expiresIn: time
-    }) // 60, "2 days", "10h", "7d".
+    const token = jwt.sign(userInfo, secret, { expiresIn: time }) // 60, "2 days", "10h", "7d".
     // token加密
     const cipher = crypto.createCipheriv(ALGORITHM, key, iv)
     let encrypted = cipher.update(token, 'utf8', 'hex')
