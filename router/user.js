@@ -3,7 +3,7 @@ const router = express.Router()
 // const sqlTool = require('../utils/handle')
 const query = require('../utils/pool_async')
 const json = require('../utils/response')
-const jwt = require('jsonwebtoken')
+// const jwt = require('jsonwebtoken')
 const tokenjs = require('../utils/token')
 
 // 注册
@@ -43,7 +43,7 @@ router.post('/login', async function (req, res) {
       json(res, 1, null, '用户名或密码不正确!')
       return
     }
-    const { token, encrypted } = tokenjs.getToken({ username }, 6000) // 存未加密的 ，响应加密的
+    const { token, encrypted } = tokenjs.getToken({ username }, '120s') // 存未加密的 ，响应加密的
     const updateSql = `UPDATE users SET token=? WHERE username=?;`
     const updateResult = await query(updateSql, [token, username])
     console.log('updateResult===', updateResult)

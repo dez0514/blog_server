@@ -1,7 +1,6 @@
 const jwt = require('jsonwebtoken');
 const NodeRSA = require('node-rsa');
 const crypto = require('crypto');
-
 // const secret = 'token'; // 密钥，不能丢
 const secret = new NodeRSA({ b: 512 }).exportKey('public');
 // 加密必要参数
@@ -11,7 +10,6 @@ const PASSWORD = 'icanchangeit';
 const key = crypto.scryptSync(PASSWORD, 'zwadeisafunyboy', 24);
 // 使用 `crypto.randomBytes()` 生成随机的 iv 而不是此处显示的静态的 iv。
 const iv = Buffer.alloc(16, 16); // 初始化向量。
-
 /**
  * token生成
  * @param <Object> userInfo - 用户信息
@@ -26,7 +24,6 @@ const getToken = (userInfo, time) => {
     encrypted += cipher.final('hex')
     return { token , encrypted }
 };
-
 /**
  * token验证
  * @param String tokens
@@ -34,19 +31,20 @@ const getToken = (userInfo, time) => {
  * @return bool 过期: false, 不过期: true
  */
 const checkToken = (tokens) => {
+    if (!tokens) return false
     tokens = tokens.replace(/\s+/g, ''); // 空格替换
     // 解密
     const decipher = crypto.createDecipheriv(ALGORITHM, key, iv);
     // 使用相同的算法、密钥和 iv 进行加密
     let decrypted = decipher.update(tokens, 'hex', 'utf8')
     try {
-        decrypted += decipher.final('utf8')
+      decrypted += decipher.final('utf8')
     } catch (error) {
-        return false
+      return false
     }
     const decoded = jwt.decode(decrypted, secret)
     // 600秒过期预警 refreshToken用
-    // if (type && decoded.exp > new Date() / 1000 && decoded.exp < new Date() / 1000 + 600) {
+    // if (decoded.exp > new Date() / 1000 && decoded.exp < new Date() / 1000 + 600) {
     //     ctx.append('refresh', true);
     // } else {
     //     ctx.remove('refresh');
@@ -54,5 +52,8 @@ const checkToken = (tokens) => {
     console.log('decoded===', decoded)
     return !(decoded && decoded.exp <= new Date() / 1000);
 };
+const refreshToken = (token, refresh_token) => {
+
+}
 
 module.exports = { getToken, checkToken }

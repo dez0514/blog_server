@@ -92,3 +92,19 @@ id INT UNSIGNED AUTO_INCREMENT;
 
 alter table tags change column name
 name varchar(40) not NULL unique;
+
+#### refreshToken机制
+为什么需要刷新令牌
+如果token超时时间很长，比如14天，由于第三方软件获取受保护资源都要带着token，这样token的攻击面就比较大。
+如果token超时时间很短，比如1个小时，那其超时之后就需要用户再次授权，这样的频繁授权导致用户体验不好。
+引入refreshToken，就解决了token设置时间比较长，容易泄露造成安全问题，设置时间比较短，又需要频繁让用户授权的矛盾。
+#### 刷新过程
+用户通过用户名和密码发送登录请求；
+服务端验证，验证成功返回一个签名的 token和refreshToken 给客户端；
+客户端储存token, 并且每次请求都会附带它；
+服务端验证token 有效性并返回数据；
+当服务端验证token即将失效，再返回数据的同时带一个即将过期的标志位通知客户端需要刷新令牌；
+客户端收到刷新标志时，再下一次访问的时候携带token和refreshToken或者单独请求刷新接口；
+服务端验证token即将过期且refreshToken有效性后返回新的token和请求数据；
+客户端储存新token, 并且每次请求都会附带它。
+
