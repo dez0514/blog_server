@@ -44,8 +44,10 @@ router.post('/login', async function (req, res) {
       return
     }
     const { token, encrypted } = tokenjs.getToken({ username }, '120s') // 存未加密的 ，响应加密的
-    const updateSql = `UPDATE users SET token=? WHERE username=?;`
-    const updateResult = await query(updateSql, [token, username])
+    const refreshTokenData = tokenjs.getToken({ username }, '600s')
+    const refresh_token = refreshTokenData.token
+    const updateSql = `UPDATE users SET token=?,refresh_token=? WHERE username=?;`
+    const updateResult = await query(updateSql, [token, refresh_token, username])
     console.log('updateResult===', updateResult)
     if (Number(updateResult.affectedRows) === 1) {
       json(res, 0, { token: encrypted, userinfo: { username } }, '登录成功!')

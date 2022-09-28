@@ -2,6 +2,8 @@ const express = require('express')
 const router = express.Router()
 const sqlTool = require('../utils/handle')
 const dayjs = require('dayjs')
+const query = require('../utils/pool_async')
+const json = require('../utils/response')
 // code: 0 success, 1 err, 2 参数错误
 // 文章列表 都做分页 3处接口 type 区分归档查询
 // 1. 首页 分类查询 最新就是全部，其他 按照 tags 存在就有查询，字段用tag
@@ -83,10 +85,26 @@ router.get('/article_all_list', function (req, res, next) {
   sqlTool.queryAll(sql, [], req, res, next);
 });
 
-router.get('/article_detail', function (req, res, next) {
-  const id = req.query.id;
-  const sql = 'SELECT * FROM articles WHERE id=?'
-  sqlTool.queryById(sql, id, res, next);
+router.get('/article_detail', async function (req, res, next) {
+  try {
+    const id = req.query.id;
+    const sql = 'SELECT * FROM articles WHERE id=?'
+    const sql_tags = `select * from tags t left join ( select r.tag_id as id  from article_tag r left join articles a on a.id = r.article_id where a.id = ?  ) ra on t.id = ra.id`
+    const dataArticle = await query(sql, id)
+    if(dataArticle.length === 0) {
+      json(res, 1, null, '文章不存在!')
+      return
+    } 
+    const dataTags = await query(sql_tags, id) // 查询文章的标签
+    let data = dataArticle[0]
+    // console.log(dataTags)
+    data.tagList = dataTags.map(item => {
+      return { ...item }
+    })
+    json(res, 0, data, '查询成功')
+  } catch(err) {
+    json(res, 1, err, '查询失败!')
+  }
 });
 router.post('/add_article', function (req, res, next) {
   const params = req.body;

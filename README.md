@@ -93,6 +93,10 @@ id INT UNSIGNED AUTO_INCREMENT;
 alter table tags change column name
 name varchar(40) not NULL unique;
 
+left join:
+select t.name from tags t left join 
+( select id as r.tag_id  from relation_article_tag r left join articles a on a.id = r.article_id where a.id = 变量  ) ra on t.id = ra.id
+
 #### refreshToken机制
 为什么需要刷新令牌
 如果token超时时间很长，比如14天，由于第三方软件获取受保护资源都要带着token，这样token的攻击面就比较大。
@@ -108,3 +112,13 @@ name varchar(40) not NULL unique;
 服务端验证token即将过期且refreshToken有效性后返回新的token和请求数据；
 客户端储存新token, 并且每次请求都会附带它。
 
+#### 刷新过程 2
+登录成功；
+生成 token和refreshToken，只将token响应给接口，同时将 refreshToken 和 token 存给用户表；
+token时效30min, refreshToken时效一天
+前端每次请求接口，如果接口 响应头 里有token，就替换掉浏览器缓存上存的
+接口收到请求校验token：
+1.如果有效正常响应，并且更新token,refreshToken时效
+2.如果token失效,用token查询对应的refreshToken，
+  2.1如果refreshToken有效就用它来刷新token，
+  2.2如果refreshToken失效 就返回 无效token，前端收到跳转登录

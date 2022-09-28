@@ -10,6 +10,7 @@ const fileApi = require('./router/file')
 const userApi = require('./router/user')
 const tokenjs = require('./utils/token')
 const json = require('./utils/response')
+const query = require('./utils/pool_async')
 
 dotenv.config({
   path: path.join(__dirname, './config/config.env')
@@ -21,9 +22,6 @@ app.all('*', function(req, res, next){
   res.header("Access-Control-Allow-Headers", "X-Requested-With")
   res.header("Access-Control-Allow-Methods", "PUT,POST,GET,DELETE,OPTIONS")
   // res.header("Content-Type", "application/json;charset=utf-8") // node 图片中文文件名时乱码
-  // res.setHeader('Content-Type', 'application/json;charset=utf-8')
-
-  // res.header('Access-Control-Allow-Headers', 'X-Requested-With, mytoken')
   res.header('Access-Control-Allow-Headers', 'X-Requested-With, Authorization')
   res.header('Access-Control-Allow-Headers', 'Content-Type, Content-Length, Authorization, Accept,X-Requested-With')
   // res.header('X-Powered-By', ' 3.2.1')
@@ -43,23 +41,46 @@ app.get('/', (req, res) => {
 })
 
 //  拦截 /api 下的所有请求 验证 token
-app.use('/api', (req, res, next) => {
-  // console.log('req path====', req.path)
-  // console.log('req token====', req.headers.authorization)
-  const noNeedCheckUrls = ['/user/register', '/user/login']
-  if (noNeedCheckUrls.includes(req.path)) { // 无需校验token的接口
-    next()
-    return
-  }
-  const token = (req.headers && req.headers.authorization) || ''
-  const isTokenValid = tokenjs.checkToken(token)
-  console.log('app token isValid==', isTokenValid)
-  if (!isTokenValid) {
-    // todo: 如果失效，判断 refresh_token 是否有效，有效就刷新token为有效，否则再报417
-    json(res, 417, null, 'invalid token!')
-    return
-  }
-  //todo: 如果有效 更新token的有效时间（用户有操作时，一直有效，停止一段时间操作时就跳登录）
+app.use('/api', async(req, res, next) => {
+  // const noNeedCheckUrls = ['/user/register', '/user/login']
+  // if (noNeedCheckUrls.includes(req.path)) { // 无需校验token的接口
+  //   next()
+  //   return
+  // }
+  // const token = (req.headers && req.headers.authorization) || ''
+  // const decoded = tokenjs.decodeToken(token)
+  // const isTokenValid = (decoded && decoded.exp > new Date() / 1000) || false
+  // if (!isTokenValid) {
+  //   const username = (decoded && decoded.username) || ''
+  //   if (!username) {
+  //     json(res, 417, null, 'invalid token!')
+  //     return
+  //   }
+  //   const sql = 'SELECT refresh_token FROM users WHERE username=?;'
+  //   const result = await query(sql, [username])
+  //   if(!result || result.length === 0 || !result[0].refresh_token) {
+  //     json(res, 417, null, 'invalid token!')
+  //     return
+  //   }
+  //   const refresh_token = result[0].refresh_token
+  //   const decodeRefresh = tokenjs.decodeSimpleToken(refresh_token)
+  //   console.log('decodeRefresh===', decodeRefresh)
+  //   const refreshIsValid = (decodeRefresh && decodeRefresh.exp > new Date() / 1000) || false
+  //   if (!refreshIsValid) {
+  //     json(res, 417, null, 'invalid token!')
+  //     return
+  //   }
+  //   // todo: 如果失效，判断 refresh_token 是否有效，有效就刷新token，否则再报417
+  //   const newToken = tokenjs.getToken({ username }, '120s')
+  //   const updateSql = `UPDATE users SET token=? WHERE username=?;`
+  //   const updateResult = await query(updateSql, [newToken.token, username])
+  //   if (Number(updateResult.affectedRows) !== 1) {
+  //     json(res, 417, null, 'invalid token!')
+  //     return
+  //   }
+  //   res.setHeader('Authorization', newToken.encrypted) // 设置响应头
+  //   next()
+  // }
   next()
 })
 
