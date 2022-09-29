@@ -7,7 +7,7 @@ const json = require('../utils/response')
 const tokenjs = require('../utils/token')
 
 // 注册
-router.post('/register',async function (req, res) {
+router.post('/register', async function (req, res) {
   const params = req.body;
   try {
     const { username, password } = params

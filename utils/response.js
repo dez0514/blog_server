@@ -1,7 +1,10 @@
-const json = function (res, code, data, message) {
+const json = function (res, code, data, message, total=-1) {
   const response = {
     code: code,
     message: message
+  }
+  if(total > -1) {
+    response.total = total
   }
   if(data) {
     if(Number(code) === 0) {

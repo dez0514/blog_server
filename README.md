@@ -35,7 +35,7 @@
 |  author | varchar(30) | no | -- | null | -- |
 |  extra_title | varchar(100) | no | -- | null | -- |
 |  banner | varchar(100) | no | -- | null | -- |
-|  tags | varchar(100) | no | -- | null | -- |
+<!-- |  tags | varchar(100) | no | -- | null | -- | -->
 |  content | longtext | no | -- | null | -- |
 |  git | varchar(100) | no | -- | null | -- |
 |  views | int | yes | -- | 0 | -- |
@@ -58,14 +58,15 @@
 |  id | int unsigned | no | pri | null | auto_increment |
 |  article_id | int | no | uni | null | -- |
 |  tag_id | int | no | -- | null | -- |
-|  tag_name | varchar(40) | no | -- | null | -- |
 #### article_tag 关系表逻辑梳理
-1.文章查询显示标签的时候，可能要获取标签的其他信息显示，文章表的一个字段无法存。
-2.删除标签时，要干掉文章表里的该标签
-3.新增文章时，文章添加几个标签，就往关系表存几条数据.
-4.删除文章时，根据文章id, 删除关联表里的所有文章id与之相等的数据。
+1. 文章表里不需要标签任何信息
+2. 标签表里不需要文章的任何信息
+3. 关联表里保存文章id 和 标签id, 多对多。
+4. 文章增删改时 同时操作关联表
+5. 标签增删改时 同时操作关联表
+6. 查询时 利用 左右连接 查询 关联表
 
-### helper
+### mysql & database helper
 cmd：
 1. mysql -u root -p
 2. ******
@@ -93,9 +94,9 @@ id INT UNSIGNED AUTO_INCREMENT;
 alter table tags change column name
 name varchar(40) not NULL unique;
 
-left join:
-select t.name from tags t left join 
-( select id as r.tag_id  from relation_article_tag r left join articles a on a.id = r.article_id where a.id = 变量  ) ra on t.id = ra.id
+// 入门级sql要会啊...
+right join:
+ select t.* from tags t right join ( select r.tag_id as id  from article_tag r right join articles a on a.id = r.article_id where a.id = ''  ) ra on t.id = ra.id;
 
 #### refreshToken机制
 为什么需要刷新令牌

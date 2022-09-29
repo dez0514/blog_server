@@ -2,6 +2,7 @@ const express = require('express')
 const router = express.Router()
 const fs = require('fs')
 const upload = require('../utils/uploadConfig')
+const json = require('../utils/response')
 // 图片操作接口
 // 上传图片
 router.post('/upload', upload.array("file"), (req, res) => {
@@ -11,16 +12,9 @@ router.post('/upload', upload.array("file"), (req, res) => {
   // 上传成功再移动到指定目录
   const files = req.files
   if (files) {
-    res.json({
-      code: '0',
-      data: files,
-      message: '上传成功'
-    })
+    json(res, 0, files, '上传成功!')
   } else {
-    res.json({
-      code: '-1',
-      message: '上传失败'
-    })
+    json(res, 1, null, '上传失败!')
   }
 })
 
@@ -29,20 +23,14 @@ router.post('/mkdir', function (req, res, next) {
   const params = req.body.name
   const isExist = fs.existsSync(`./imgs/${params}`)
   if (isExist) {
-    res.json({
-      code: '-1',
-      message: '该目录已存在，请勿重复创建！'
-    })
+    json(res, 1, null, '该目录已存在，请勿重复创建!')
     return
   }
   fs.mkdir(`./imgs/${params}`, function (err) {
     if (err) {
-      res.send(err)
+      json(res, 1, err, '上传失败!')
     } else {
-      res.json({
-        code: '0',
-        message: '创建成功！'
-      })
+      json(res, 0, null, '创建成功!')
     }
   })
 })
@@ -52,21 +40,12 @@ router.post('/deletedir', function (req, res, next) {
   const isExist = fs.existsSync(`./imgs/${params}`)
   if (isExist) {
     deleteFolder(`./imgs/${params}`, () => {
-      res.json({
-        code: '0',
-        message: '删除成功'
-      })
+      json(res, 0, null, '删除成功!')
     }, () => {
-      res.json({
-        code: '-1',
-        message: '删除失败'
-      })
+      json(res, 1, null, '删除失败!')
     })
   } else {
-    res.json({
-      code: '-1',
-      message: '该目录不存在'
-    })
+    json(res, 1, null, '该目录不存在!')
     return
   }
 })
@@ -96,15 +75,9 @@ router.post('/deletefile', function (req, res, next) {
   const isExist = fs.existsSync(`./imgs/${params}`)
   if (isExist) {
     fs.unlinkSync(`./imgs/${params}`)
-    res.json({
-      code: '0',
-      message: '删除成功'
-    })
+    json(res, 0, null, '删除成功!')
   } else {
-    res.json({
-      code: '-1',
-      message: '该文件不存在'
-    })
+    json(res, 1, null, '该文件不存在!')
   }
 })
 // 批量删除文件
@@ -114,30 +87,19 @@ router.post('/deletefiles', function (req, res, next) {
     // 传入时 英文逗号隔开
     const nameArr = params.split(',')
     if (nameArr.length === 0) {
-      res.json({
-        code: '-1',
-        message: '未选择需要删除的数据'
-      })
+      json(res, 1, null, '未选择需要删除的数据!')
       return
     }
-    console.log('ppp===', nameArr)
     nameArr.forEach(item => {
       const isExist = fs.existsSync(`./imgs/${item}`)
       if (isExist) {
         fs.unlinkSync(`./imgs/${item}`)
       }
     })
-    res.json({
-      code: '0',
-      message: '删除成功'
-    })
+    json(res, 0, null, '删除成功!')
   } catch {
-    res.json({
-      code: '-1',
-      message: '删除失败'
-    })
+    json(res, 1, null, '删除失败!')
   }
-
 })
 // 文件列表
 router.post('/filelist', function (req, res, next) {
@@ -157,10 +119,7 @@ router.post('/filelist', function (req, res, next) {
       isFolder
     })
   })
-  res.json({
-    code: '0',
-    data: data
-  })
+  json(res, 0, data, '查询成功!')
 })
 
 module.exports = router;

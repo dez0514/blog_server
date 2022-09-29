@@ -8,9 +8,9 @@ const articleApi = require('./router')
 const tagApi = require('./router/tag')
 const fileApi = require('./router/file')
 const userApi = require('./router/user')
-const tokenjs = require('./utils/token')
-const json = require('./utils/response')
-const query = require('./utils/pool_async')
+// const tokenjs = require('./utils/token')
+// const json = require('./utils/response')
+// const query = require('./utils/pool_async')
 
 dotenv.config({
   path: path.join(__dirname, './config/config.env')
@@ -92,6 +92,8 @@ app.use('/api/user', userApi)
 
 const port = process.env.PORT
 app.listen(port, () => {
-  console.log(`Server环境：${process.env.NODE_ENV}，端口：${port}`.magenta.bold)
+  // console.log(`Server环境：${process.env.NODE_ENV}，端口：${port}`.magenta.bold)
+  const log = 'Server环境：'.magenta + `${process.env.NODE_ENV}`.red + '，端口：'.magenta + `${port}`.red
+  console.log(log.bold)
 })
 module.exports = app
