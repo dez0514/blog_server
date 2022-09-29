@@ -5,7 +5,7 @@
 |  /article_list | get | { pageSize,pageNum,type,tag,keyword,year,month } | 文章列表 |
 |  /article_all_list | get | -- | 文章列表（所有） |
 |  /article_detail | get | { id } | 文章详情 |
-|  /add_article | post | { title, author, extra_title, banner, tags, content, git, id(编辑带id) } | 新增编辑文章 |
+|  /add_article | post | { title, author, extra_title, banner, tags（id英文逗号拼接）, content, git, id(编辑带id) } | 新增编辑文章 |
 |  /delete_article | get | { id } | 删除文章 |
 
 #### tag
@@ -95,8 +95,22 @@ alter table tags change column name
 name varchar(40) not NULL unique;
 
 // 入门级sql要会啊...
-right join:
- select t.* from tags t right join ( select r.tag_id as id  from article_tag r right join articles a on a.id = r.article_id where a.id = ''  ) ra on t.id = ra.id;
+lef join, right join, 临时表
+查询文章详情，关联表中文章id对应的所有标签id，再用这些标签id查标签表中信息
+select t.* from tags t right join ( select r.tag_id as id  from article_tag r right join articles a on a.id = r.article_id where a.id = ''  ) ra on t.id = ra.id;
+
+查询文章列表，每条文章数据里需要 带上它的标签信息。
+思路1：长sql, 和上面类似，但是GROUP_CONCAT只能将所有标签信息的给一个字段，前端获取到进行切割
+// limit做分页，其他筛选条件可以继续拼
+select ar.title as '文章名', GROUP_CONCAT(t.name separator ',') as '标签' from ( select a.*, r.tag_id as tag_id from articles a left join  article_tag r on a.id = r.article_id where 1=1 ) ar left join tags t on ar.tag_id = t.id group by ar.id order by ar.id desc limit 4, 2 
+
+select ar.* , GROUP_CONCAT(t.name separator ',') from ( select a.*, r.tag_id as tag_id from articles a left join  article_tag r on a.id = r.article_id where 1=1 ) ar left join tags t on ar.tag_id = t.id group by ar.id order by ar.id desc  limit 4, 2 ;
+
+select ar.* , GROUP_CONCAT(CONCAT_WS(', ', t.name, t.icon) SEPARATOR ';') as 'tagArrs' from ( select a.*, r.tag_id as tag_id from articles a left join  article_tag r on a.id = r.article_id where 1=1 ) ar left join tags t on ar.tag_id = t.id group by ar.id order by ar.id desc limit 4, 2;
+
+思路2：先查文章列表，再根据文章id集合查所有文章id对应的标签总列表，然后再根据文章id分类合并处理
+利用id集合查所有id数据 的sql
+select t.*, r.article_id from tags t left join article_tag r on t.id =  r.tag_id  where r.article_id in (${ids});
 
 #### refreshToken机制
 为什么需要刷新令牌

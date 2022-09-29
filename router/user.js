@@ -1,6 +1,5 @@
 const express = require('express')
 const router = express.Router()
-// const sqlTool = require('../utils/handle')
 const query = require('../utils/pool_async')
 const json = require('../utils/response')
 // const jwt = require('jsonwebtoken')

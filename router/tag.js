@@ -1,6 +1,5 @@
 const express = require('express')
 const router = express.Router()
-const sqlTool = require('../utils/handle')
 const qs = require('qs')
 const query = require('../utils/pool_async')
 const json = require('../utils/response')
@@ -9,8 +8,10 @@ router.get('/tag_all_list', async function (req, res, next) {
   try {
     const sql = 'SELECT * FROM tags'
     const data = await query(sql, [])
+    console.log(data)
     json(res, 0, data, '查询成功!')
   } catch (err) {
+    console.log(err)
     json(res, 1, err, '查询失败!')
   }
 });
@@ -77,7 +78,7 @@ router.post('/add_taglist', async function (req, res, next) {
     json(res, 1, err, '操作失败!')
   }
 });
-
+// 操作关联表
 router.post('/delete_tag', async function (req, res, next) {
   try {
     const id = req.body.id;

@@ -83,6 +83,25 @@ router.get('/article_list', async function (req, res, next) {
     const result = await query(sql, sqlValArr)
     const total = (result && result[0] && result[0][0] && (result[0][0]['COUNT(*)'] || result[0][0]['COUNT(1)'])) || 0
     const data = (result && result.length > 1) ? result[1] : []
+    if (data.length > 0) {
+      const ids = data.map(item => item.id)
+      const sqlstr = `select t.*, r.article_id from tags t left join article_tag r on t.id = r.tag_id where r.article_id in (${ids});`
+      const tagData = await query(sqlstr, [])
+      // 标签与文章列表分类合并
+      data.forEach(item => {
+        item.tagList = []
+        tagData.forEach(inner => {
+          if (inner && inner.article_id === item.id) {
+            item.tagList.push({
+              tagId: inner.id,
+              name: inner.name,
+              color: inner.color,
+              icon: inner.icon
+            })
+          }
+        })
+      })
+    }
     json(res, 0, data, '查询成功!', total)
   } catch (err) {
     json(res, 1, err, '查询失败!')
@@ -93,12 +112,31 @@ router.get('/article_all_list', async function (req, res, next) {
   try {
     const sql = `SELECT * FROM articles`
     const result = await query(sql, [])
+    if (result.length > 0) {
+      const ids = result.map(item => item.id)
+      const sqlstr = `select t.*, r.article_id from tags t left join article_tag r on t.id = r.tag_id where r.article_id in (${ids});`
+      const tagData = await query(sqlstr, [])
+      // 标签与文章列表分类合并
+      result.forEach(item => {
+        item.tagList = []
+        tagData.forEach(inner => {
+          if (inner && inner.article_id === item.id) {
+            item.tagList.push({
+              tagId: inner.id,
+              name: inner.name,
+              color: inner.color,
+              icon: inner.icon
+            })
+          }
+        })
+      })
+    }
     json(res, 0, result, '查询成功')
   } catch (err) {
     json(res, 1, err, '查询失败!')
   }
 });
-
+// 查询文章详情，查询关联表中所有文章的标签
 router.get('/article_detail', async function (req, res, next) {
   try {
     const id = req.query.id;
@@ -114,7 +152,10 @@ router.get('/article_detail', async function (req, res, next) {
     // console.log(dataTags)
     data.tagList = dataTags.map(item => {
       return {
-        ...item
+        tagId: item.id,
+        name: item.name,
+        color: item.color,
+        icon: item.icon
       }
     })
     json(res, 0, data, '查询成功')
@@ -122,7 +163,8 @@ router.get('/article_detail', async function (req, res, next) {
     json(res, 1, err, '查询失败!')
   }
 });
-
+// 1.新增文章时，文章表新增数据的同时，获取提交的标签id，关联表新增数据。
+// 2.编辑文章时，根据标签id变化，新增或者删除关联表数据。
 router.post('/add_article', async function (req, res, next) {
   try {
     const params = req.body;
@@ -131,41 +173,35 @@ router.post('/add_article', async function (req, res, next) {
       author,
       extra_title,
       banner,
-      tags,
+      tags, // 标签id集合 英文逗号拼接
       content,
       git
     } = params
     let sql = ''
+    const tagIds = tags.split(',')
     if (params.id) { // 编辑
       const update_time = dayjs(new Date()).format('YYYY-MM-DD HH:mm:ss')
       console.log('update_time===', update_time)
-      const temp = {
-        title,
-        author,
-        extra_title,
-        banner,
-        tags,
-        git,
-        update_time,
-        content
-      }
+      const temp = { title, author, extra_title, banner, git, update_time, content }
       const str = Object.keys(temp).map(item => `${item}=?`).join(',')
       const values = Object.values(temp)
       sql = `UPDATE articles SET ${str} WHERE id=?;`
       console.log('sql==', sql)
       const result = await query(sql, [...values, params.id])
+      // 编辑文章时，根据标签id变化，新增或者删除关联表数据。
       json(res, 0, null, '修改成功!')
     } else { // 新增
-      sql = 'INSERT INTO articles(title, author, extra_title, banner, tags, content, git) VALUES(?,?,?,?,?,?,?)'
-      const vallist = [title, author, extra_title, banner, tags, content, git]
+      sql = 'INSERT INTO articles(title, author, extra_title, banner, content, git) VALUES(?,?,?,?,?,?,?)'
+      const vallist = [title, author, extra_title, banner, content, git]
       const result = await query(sql, vallist)
+      // 新增文章时，文章表新增数据的同时，获取提交的标签id，关联表新增数据。
       json(res, 0, null, '新增成功!')
     }
   } catch (err) {
     json(res, 1, err, '操作失败!')
   }
 });
-// 删除文章
+// 删除文章 删除关联表中 该文章
 router.post('/delete_article', async function (req, res, next) {
   try {
     const id = req.body.id;
