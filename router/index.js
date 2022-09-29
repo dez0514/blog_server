@@ -195,6 +195,7 @@ router.post('/add_article', async function (req, res, next) {
       const vallist = [title, author, extra_title, banner, content, git]
       const result = await query(sql, vallist)
       // 新增文章时，文章表新增数据的同时，获取提交的标签id，关联表新增数据。
+      // 这里没有 文章id 怎么弄
       json(res, 0, null, '新增成功!')
     }
   } catch (err) {
