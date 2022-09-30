@@ -8,10 +8,10 @@ router.get('/tag_all_list', async function (req, res, next) {
   try {
     const sql = 'SELECT * FROM tags'
     const data = await query(sql, [])
-    console.log(data)
+    // console.log(data)
     json(res, 0, data, '查询成功!')
   } catch (err) {
-    console.log(err)
+    // console.log(err)
     json(res, 1, err, '查询失败!')
   }
 });
@@ -42,15 +42,22 @@ router.post('/add_tag', async function (req, res, next) {
       sql = `UPDATE tags SET name=?, color=?, icon=? WHERE id=?`
       const list = [...vallist, id]
       const result = await query(sql, list)
-      json(res, 0, null, '编辑成功!')
+      if (result && result.affectedRows && result.affectedRows > 0) {
+        json(res, 0, null, '编辑成功!')
+      } else {
+        json(res, 1, result, '编辑失败!')
+      }
     } else {
       sql = 'INSERT INTO tags(name, color, icon) VALUES(?,?,?)'
-      // sqlTool.add(sql, vallist, res, next);
       const result = await query(sql, vallist)
-      json(res, 0, null, '新增成功!')
+      if (result && result.affectedRows && result.affectedRows > 0) {
+        json(res, 0, null, '新增成功!')
+      } else {
+        json(res, 1, result, '新增失败!')
+      }
     }
   } catch(err) {
-    json(res, 1, err, '新增失败!')
+    json(res, 1, err, '操作失败!')
   }
 });
 // 批量
@@ -73,18 +80,33 @@ router.post('/add_taglist', async function (req, res, next) {
     })
     let sql = `INSERT INTO tags(name, color, icon) VALUES ${vq}`
     const result = await query(sql, temp)
-    json(res, 0, null, '新增成功!')
+    if (result && result.affectedRows && result.affectedRows > 0) {
+      json(res, 0, null, '新增成功!')
+    } else {
+      json(res, 1, result, '新增失败!')
+    }
   } catch(err) {
     json(res, 1, err, '操作失败!')
   }
 });
-// 操作关联表
+
 router.post('/delete_tag', async function (req, res, next) {
   try {
     const id = req.body.id;
-    const sql =  `DELETE FROM tags WHERE id=?`
-    const result = await query(sql, id)
-    json(res, 0, null, '删除成功!')
+    const sql = `DELETE FROM tags WHERE id=?`
+    const dataResult = await query(sql, id)
+    if (dataResult && dataResult.affectedRows && dataResult.affectedRows === 0) {
+      json(res, 1, dataResult, '删除失败!')
+      return
+    }
+    const delSql = `DELETE FROM article_tag WHERE tag_id=?`
+    // 删除关联表里 对应的 tag_id 数据
+    const result = await query(delSql, id)
+    if (result && result.affectedRows && result.affectedRows > 0) {
+      json(res, 0, null, '删除成功!')
+    } else {
+      json(res, 1, result, '删除失败!')
+    }
   } catch(err) {
     json(res, 1, err, '删除失败!')
   }

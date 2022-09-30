@@ -41,7 +41,7 @@ const decodeToken = (tokens) => {
     return null
   }
   const decoded = jwt.decode(decrypted, secret) // jwt.verify
-  console.log('decoded===', decoded)
+  // console.log('decoded===', decoded)
   return decoded
 };
 // 解析未加密的token: 例 refresh_token 没有在接口传递，存取都没加密

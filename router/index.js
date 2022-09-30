@@ -164,7 +164,7 @@ router.get('/article_detail', async function (req, res, next) {
   }
 });
 // 1.新增文章时，文章表新增数据的同时，获取提交的标签id，关联表新增数据。
-// 2.编辑文章时，根据标签id变化，新增或者删除关联表数据。
+// 2.编辑文章时，根据标签id变化，先删除对应关联表数据，再新增。(粗暴)
 router.post('/add_article', async function (req, res, next) {
   try {
     const params = req.body;
@@ -179,6 +179,9 @@ router.post('/add_article', async function (req, res, next) {
     } = params
     let sql = ''
     const tagIds = tags.split(',')
+    const qsArr = new Array(tagIds.length).fill('(?, ?)')
+    const valStr = qsArr.join(',')
+    const relationSql = `INSERT INTO article_tag(article_id, tag_id) VALUES${valStr};`
     if (params.id) { // 编辑
       const update_time = dayjs(new Date()).format('YYYY-MM-DD HH:mm:ss')
       console.log('update_time===', update_time)
@@ -188,14 +191,48 @@ router.post('/add_article', async function (req, res, next) {
       sql = `UPDATE articles SET ${str} WHERE id=?;`
       console.log('sql==', sql)
       const result = await query(sql, [...values, params.id])
-      // 编辑文章时，根据标签id变化，新增或者删除关联表数据。
+      if (result && result.affectedRows && result.affectedRows === 0) {
+        json(res, 1, result, '修改失败!')
+        return
+      }
+      // 编辑文章时，先删除对应的所有关联表数据，再新增。
+      const delSql =  `DELETE FROM article_tag WHERE article_id=?;`
+      const delRes = await query(delSql, params.id)
+      if (delRes && delRes.affectedRows && delRes.affectedRows === 0) {
+        json(res, 1, delRes, '修改失败!')
+        return
+      }
+      const tempArr = []
+      tagIds.forEach(item => {
+        tempArr.push(params.id)
+        tempArr.push(item)
+      })
+      const lastRes = await query(relationSql, tempArr)
+      if (lastRes && lastRes.affectedRows && lastRes.affectedRows === 0) {
+        json(res, 1, lastRes, '修改失败!')
+        return
+      }
       json(res, 0, null, '修改成功!')
     } else { // 新增
-      sql = 'INSERT INTO articles(title, author, extra_title, banner, content, git) VALUES(?,?,?,?,?,?,?)'
+      sql = 'INSERT INTO articles(title, author, extra_title, banner, content, git) VALUES(?,?,?,?,?,?)'
       const vallist = [title, author, extra_title, banner, content, git]
       const result = await query(sql, vallist)
+      if (result && result.affectedRows && result.affectedRows === 0) {
+        json(res, 1, result, '新增失败!')
+        return
+      }
       // 新增文章时，文章表新增数据的同时，获取提交的标签id，关联表新增数据。
-      // 这里没有 文章id 怎么弄
+      const articleId = result.insertId
+      const tempArr = []
+      tagIds.forEach(item => {
+        tempArr.push(articleId)
+        tempArr.push(item)
+      })
+      const addRes = await query(relationSql, tempArr)
+      if (addRes && addRes.affectedRows && addRes.affectedRows === 0) {
+        json(res, 1, addRes, '新增失败!')
+        return
+      }
       json(res, 0, null, '新增成功!')
     }
   } catch (err) {
@@ -207,7 +244,18 @@ router.post('/delete_article', async function (req, res, next) {
   try {
     const id = req.body.id;
     const sql = `DELETE FROM articles WHERE id=?;`
-    const result = await query(sql, id)
+    const delRes = await query(sql, id)
+    if (delRes && delRes.affectedRows && delRes.affectedRows === 0) {
+      json(res, 1, delRes, '删除失败!')
+      return
+    }
+    // 删除关联表中的文章
+    const delSql =  `DELETE FROM article_tag WHERE article_id=?;`
+    const lastRes = await query(delSql, id)
+    if (lastRes && lastRes.affectedRows && lastRes.affectedRows === 0) {
+      json(res, 1, lastRes, '删除失败!')
+      return
+    }
     json(res, 0, null, '删除成功!')
   } catch (err) {
     json(res, 1, err, '删除失败!')

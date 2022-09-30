@@ -6,7 +6,7 @@ const poolextend = require('./poolextend');
 // 使用连接池，提升性能
 const pool = mysql.createPool(poolextend({}, mysqlconfig));
 
-const query = function (sql, values) {
+const query = function (sql, values=null) {
   return new Promise((resolve, reject) => {
     pool.getConnection(function (err, connection) {
       if (err) {

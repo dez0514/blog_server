@@ -8,9 +8,10 @@ const articleApi = require('./router')
 const tagApi = require('./router/tag')
 const fileApi = require('./router/file')
 const userApi = require('./router/user')
-// const tokenjs = require('./utils/token')
-// const json = require('./utils/response')
-// const query = require('./utils/pool_async')
+const tokenjs = require('./utils/token')
+const json = require('./utils/response')
+const query = require('./utils/pool_async')
+const utils = require('./utils/util')
 
 dotenv.config({
   path: path.join(__dirname, './config/config.env')
@@ -22,8 +23,8 @@ app.all('*', function(req, res, next){
   res.header("Access-Control-Allow-Headers", "X-Requested-With")
   res.header("Access-Control-Allow-Methods", "PUT,POST,GET,DELETE,OPTIONS")
   // res.header("Content-Type", "application/json;charset=utf-8") // node 图片中文文件名时乱码
-  res.header('Access-Control-Allow-Headers', 'X-Requested-With, Authorization')
-  res.header('Access-Control-Allow-Headers', 'Content-Type, Content-Length, Authorization, Accept,X-Requested-With')
+  res.header('Access-Control-Allow-Headers', 'Content-Type, Content-Length, token, Accept,X-Requested-With')
+  res.header('Access-Control-Expose-Headers', 'token')
   // res.header('X-Powered-By', ' 3.2.1')
   next()
 })
@@ -42,14 +43,35 @@ app.get('/', (req, res) => {
 
 //  拦截 /api 下的所有请求 验证 token
 app.use('/api', async(req, res, next) => {
-  // const noNeedCheckUrls = ['/user/register', '/user/login']
-  // if (noNeedCheckUrls.includes(req.path)) { // 无需校验token的接口
-  //   next()
-  //   return
-  // }
-  // const token = (req.headers && req.headers.authorization) || ''
-  // const decoded = tokenjs.decodeToken(token)
-  // const isTokenValid = (decoded && decoded.exp > new Date() / 1000) || false
+  const noNeedCheckUrls = ['/user/register', '/user/login']
+  if (noNeedCheckUrls.includes(req.path)) { // 无需校验token的接口
+    next()
+    return
+  }
+  const token = (req.headers && req.headers.token) || ''
+  const decoded = tokenjs.decodeToken(token)
+  const isTokenValid = (decoded && decoded.exp > new Date() / 1000) || false
+  const username = (decoded && decoded.username) || ''
+  if (!isTokenValid || !username) {
+    json(res, 417, null, 'invalid token!')
+    return
+  }
+  // 查询username的token(未加密的)，decode出来的信息 和 接口传入的一致 就通过
+  const sql = 'SELECT token FROM users WHERE username=?;'
+  const result = await query(sql, [username])
+  if(!result || result.length === 0 || !result[0].token) {
+    json(res, 417, null, 'invalid token!')
+    return
+  }
+  const dbToken = result[0].token
+  const dbDecode = tokenjs.decodeSimpleToken(dbToken)
+  // console.log('decode===', decoded)
+  // console.log('dbDecode===', dbDecode)
+  if (!utils.isSimpleObjValEquel(decoded, dbDecode)) {
+    json(res, 417, null, 'invalid token!')
+    return
+  }
+  res.setHeader('token', token)
   // if (!isTokenValid) {
   //   const username = (decoded && decoded.username) || ''
   //   if (!username) {
@@ -78,7 +100,7 @@ app.use('/api', async(req, res, next) => {
   //     json(res, 417, null, 'invalid token!')
   //     return
   //   }
-  //   res.setHeader('Authorization', newToken.encrypted) // 设置响应头
+  //   res.setHeader('token', newToken.encrypted) // 设置响应头
   //   next()
   // }
   next()
