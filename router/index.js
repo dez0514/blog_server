@@ -3,6 +3,7 @@ const router = express.Router()
 const dayjs = require('dayjs')
 const query = require('../utils/pool_async')
 const json = require('../utils/response')
+const util = require('../utils/util')
 // code: 0 success, 1 err, 2 参数错误
 // 文章列表 都做分页 3处接口 type 区分归档查询
 // 1. 首页 分类查询 最新就是全部，其他 按照 tags 存在就有查询，字段用tag
@@ -157,7 +158,7 @@ router.get('/article_detail', async function (req, res, next) {
         color: item.color,
         icon: item.icon
       }
-    })
+    }).filter(item => !util.isFalse(item.tagId))
     json(res, 0, data, '查询成功')
   } catch (err) {
     json(res, 1, err, '查询失败!')

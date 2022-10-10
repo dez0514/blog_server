@@ -7,6 +7,11 @@ const isSimpleObjValEquel = (obj1, obj2) => {
   return isEquel
 }
 
+const isFalse = (val) => {
+  return val === '' || val === null || typeof val === 'undefined' || val === 'undefined'
+}
+
 module.exports = {
-  isSimpleObjValEquel
+  isSimpleObjValEquel,
+  isFalse
 }
