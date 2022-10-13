@@ -43,12 +43,12 @@ app.get('/', (req, res) => {
 
 //  拦截 /api 下的所有请求 验证 token
 app.use('/api', async(req, res, next) => {
-  const project = req.headers && req.headers.projectId || ''
+  const project = req.headers && req.headers.projectid || ''
   if (project === 'client') { // 前台项目接口 不需要token
     next()
     return
   }
-  const noNeedCheckUrls = ['/user/register', '/user/login']
+  const noNeedCheckUrls = ['/user/register', '/user/login', '/user/repos']
   if (noNeedCheckUrls.includes(req.path)) { // 无需校验token的接口
     next()
     return

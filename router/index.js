@@ -10,6 +10,7 @@ const util = require('../utils/util')
 // 2. year month 归档查询 查 createTime, updateTime
 // 3. keywords 搜索查询 查 title,smallTitle,content,tags 存在
 // 还要查对应条件下的 总条数。。。
+// todo : 最新按照时间，热门按照 like, 新增条件。。
 router.get('/article_list', async function (req, res, next) {
   try {
     let params = req.query;
@@ -38,7 +39,7 @@ router.get('/article_list', async function (req, res, next) {
       let tagWhere = ''
       let keywordWhere = ''
       if (tag && tag !== 'lastest') {
-        tagWhere = `FIND_IN_SET(?, tags)` // 改用占位符解决
+        tagWhere = `FIND_IN_SET(?, tags)` // 这里没用tags了 不能使用 find_in_set
         tagArr = [tag]
       }
       if (keyword) {

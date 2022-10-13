@@ -4,6 +4,7 @@ const query = require('../utils/pool_async')
 const json = require('../utils/response')
 // const jwt = require('jsonwebtoken')
 const tokenjs = require('../utils/token')
+const axios = require('axios')
 
 // 注册
 router.post('/register', async function (req, res) {
@@ -89,6 +90,57 @@ router.post('/logout', async function (req, res) {
   } catch(err) {
     json(res, 1, err, '退出失败!')
   }
+})
+
+router.get('/repos', async function (req, res) {
+  try {    
+    const response = await axios({
+      method: 'get',
+      url: 'http://api.github.com/users/dez0514/repos'
+    })
+    if (response && ('data' in response)) {
+      const list = response.data.map(item => {
+        return {
+          id: item.id,
+          name: item.name,
+          html_url: item.html_url,
+          created_at: item.created_at,
+          updated_at: item.updated_at,
+          description: item.description,
+          forks_count: item.forks_count,
+          stargazers_count: item.stargazers_count,
+          subscribers_count: item.subscribers_count
+        }
+      })
+      json(res, 0, list, '查询成功！')
+    } else {
+      json(res, 1, response, '查询失败!')
+    }
+  } catch(err) {
+    json(res, 1, err, '查询失败!')
+  }
+  // request.get('http://api.github.com/users/dez0514/repos', {
+  //   headers: {
+  //     'User-Agent': 'request'
+  //   },
+  //   json: true
+  // }, (error, response, body) => {
+  //   console.log(response)
+  //   const list = body.map(item => {
+  //     return {
+  //       id: item.id,
+  //       name: item.name,
+  //       html_url: item.html_url,
+  //       created_at: item.created_at,
+  //       updated_at: item.updated_at,
+  //       description: item.description,
+  //       forks_count: item.forks_count,
+  //       stargazers_count: item.stargazers_count,
+  //       subscribers_count: item.subscribers_count
+  //     }
+  //   })
+  //   json(res, 0, list, '查询成功！')
+  // })
 })
 
 module.exports = router;
