@@ -4,78 +4,44 @@ const dayjs = require('dayjs')
 const query = require('../utils/pool_async')
 const json = require('../utils/response')
 const util = require('../utils/util')
-// code: 0 success, 1 err, 2 参数错误
 // 文章列表 都做分页 3处接口 type 区分归档查询
-// 1. 首页 分类查询 最新就是全部，其他 按照 tags 存在就有查询，字段用tag
-// 2. year month 归档查询 查 createTime, updateTime
-// 3. keywords 搜索查询 查 title,smallTitle,content,tags 存在
-// 还要查对应条件下的 总条数。。。
-// todo : 最新按照时间，热门按照 like, 新增条件。。
+// 1. 首页查询： 最新(默认就时间降序),最热（type === 'hot'），最热按照views降序，导航标签按照tag查询，tagList(关联表)
+// 2. type === 'archive' 配合 year month 归档查询(查 createTime, updateTime)
+// 3. keywords 检索匹配, 查 title,extra_title,文章的标签(关联表) 存在
+// 4. 分页 要查对应条件下的 总条数。。。
+// todo: 重写。。
 router.get('/article_list', async function (req, res, next) {
   try {
     let params = req.query;
-    let {
-      pageSize,
-      pageNum,
-      type,
-      tag,
-      keyword,
-      year,
-      month
-    } = params;
-    console.log('type===', type)
-    if (!pageSize) {
-      pageSize = 10
-    }
-    if (!pageNum) {
-      pageNum = 1
-    }
+    let { pageSize, pageNum, ishot, tag, keyword } = params;
+    if (!pageSize) { pageSize = 10 }
+    if (!pageNum) { pageNum = 1 }
     let start = (pageNum - 1) * pageSize
     let sql = ''
-    let tagArr = []
     let keywordArr = []
     let sqlValArr = []
-    if (!type || type !== 'archive') { // 首页tag精确查找, 搜索keyword检索匹配查找
-      let tagWhere = ''
-      let keywordWhere = ''
-      if (tag && tag !== 'lastest') {
-        tagWhere = `FIND_IN_SET(?, tags)` // 这里没用tags了 不能使用 find_in_set
-        tagArr = [tag]
-      }
-      if (keyword) {
-        keywordWhere = `(title like CONCAT('%',?,'%') OR extra_title like CONCAT('%',?,'%') OR tags like CONCAT('%',?,'%'))` // 改用占位符解决
-        keywordArr = [keyword, keyword, keyword]
-      }
-      // 如果tag 和 keyword 都存在就是取交集 同时满足条件的数据
-      let hasWhere = ''
-      let hasAnd = ''
-      if (tagWhere !== '' && keywordWhere !== '') { // 都不空
-        hasWhere = 'WHERE'
-        hasAnd = 'AND'
-      } else if ((tagWhere === '' && keywordWhere !== '') || (tagWhere !== '' && keywordWhere === '')) { // 一个空 一个不空
-        hasWhere = 'WHERE'
-      }
-      const parseStr = `${hasWhere} ${tagWhere} ${hasAnd} ${keywordWhere}`
-      sql = `SELECT COUNT(*) FROM articles ${parseStr}; SELECT * FROM articles ${parseStr} ORDER BY IFNULL(update_time, create_time) DESC limit ${start},${pageSize};`
-      sqlValArr = [...tagArr, ...keywordArr, ...tagArr, ...keywordArr] // 几个问号 就要写几个值
-    } else { // 归档 type === 'archive'; createTime updateTime
-      // year=0 全部, month=0 全年， year=2022，month=1到12
-      let dateWhere = ''
-      let dateArr = []
-      if (year && Number(year) > 0) {
-        if (!month || Number(month) === 0) {
-          // 全年
-          dateWhere = `WHERE year(IFNULL(update_time, create_time)) = ?`
-          dateArr = [year]
-        } else {
-          // year, month
-          dateWhere = `WHERE year(IFNULL(update_time, create_time)) = ? AND month(IFNULL(update_time, create_time)) = ?`
-          dateArr = [year, month]
-        }
-      }
-      sql = `SELECT COUNT(*) FROM articles ${dateWhere};
-      SELECT * FROM articles ${dateWhere} ORDER BY IFNULL(update_time, create_time) DESC limit ${start},${pageSize};`
-      sqlValArr = [...dateArr, ...dateArr] // 几个问号 就要写几个值
+    let keywordWhere = ''
+    let orderBY = ''
+    if (!ishot) { // 最新时间降序
+      orderBY = 'IFNULL(update_time, create_time) DESC'
+    } else { // 最热：views降序，如果相等， 就按照时间降序
+      orderBY = 'views DESC, IFNULL(update_time, create_time) DESC'
+    }
+    if (keyword) {
+      // 先查 标签name中 包含keyword 的标签id, 然后查出关联表中这些标签id对应的文章id,
+      const or_sql = `select article_id from article_tag t2 right join  tags t1 on t2.tag_id=t1.id where name like concat('%',?,'%')`
+      keywordWhere = `where (title like concat('%',?,'%') or extra_title like concat('%',?,'%') or (id in ${or_sql}))`
+      keywordArr = [keyword, keyword, keyword]
+    }
+    if (!tag) {
+      sql = `SELECT COUNT(*) FROM articles ${keywordWhere}; SELECT * FROM articles ${keywordWhere} ORDER BY ${orderBY} limit ${start},${pageSize};`
+      sqlValArr = [...keywordArr, ...keywordArr] // 几个问号 就要写几个值
+    } else { //接收到tag 按照tagname查询关联表
+      // 该tag的文章总数量 即查：先查出该标签id, 然后关联表中该标签id的数量即为 查询的tag条件下的 文章总数量
+      // `select id from tags where name=?`
+      const count_sql = `select count(*) from article_tag t2 right join tags t1 on t2.tag_id=t1.id where name=?;`
+      sql = `${count_sql}select t3.* from articles t3 right join(select t2.article_id from (select * from tags where id in (select tag_id from article_tag)) t1 left join article_tag t2 on t1.id=t2.tag_id where t1.name = ?) t4 on t3.id=t4.article_id;`
+      sqlValArr = [tag, tag]
     }
     // console.log('sql===', sql)
     if (!sql) {
@@ -109,6 +75,63 @@ router.get('/article_list', async function (req, res, next) {
     json(res, 1, err, '查询失败!')
   }
 });
+
+// 文章归档
+router.get('/article_archive_list', async function (req, res, next) {
+  try {
+    let params = req.query;
+    let { pageSize, pageNum, year, month } = params;
+    if (!pageSize) { pageSize = 10 }
+    if (!pageNum) { pageNum = 1 }
+    let start = (pageNum - 1) * pageSize
+    let sql = ''
+    let sqlValArr = []
+    let dateWhere = ''
+    let dateArr = []
+    if (year && Number(year) > 0) {
+      if (!month || Number(month) === 0) { // 全年
+        dateWhere = `WHERE year(IFNULL(update_time, create_time)) = ?`
+        dateArr = [year]
+      } else { // year, month
+        dateWhere = `WHERE year(IFNULL(update_time, create_time)) = ? AND month(IFNULL(update_time, create_time)) = ?`
+        dateArr = [year, month]
+      }
+    }
+    sql = `SELECT COUNT(*) FROM articles ${dateWhere};
+    SELECT * FROM articles ${dateWhere} ORDER BY IFNULL(update_time, create_time) DESC limit ${start},${pageSize};`
+    sqlValArr = [...dateArr, ...dateArr] // 几个问号 就要写几个值
+    if (!sql) {
+      json(res, 1, null, '查询失败!')
+      return
+    }
+    const result = await query(sql, sqlValArr)
+    const total = (result && result[0] && result[0][0] && (result[0][0]['COUNT(*)'] || result[0][0]['COUNT(1)'])) || 0
+    const data = (result && result.length > 1) ? result[1] : []
+    if (data.length > 0) {
+      const ids = data.map(item => item.id)
+      const sqlstr = `select t.*, r.article_id from tags t left join article_tag r on t.id = r.tag_id where r.article_id in (${ids});`
+      const tagData = await query(sqlstr, [])
+      // 标签与文章列表分类合并
+      data.forEach(item => {
+        item.tagList = []
+        tagData.forEach(inner => {
+          if (inner && inner.article_id === item.id) {
+            item.tagList.push({
+              tagId: inner.id,
+              name: inner.name,
+              color: inner.color,
+              icon: inner.icon
+            })
+          }
+        })
+      })
+    }
+    json(res, 0, data, '查询成功!', total)
+  } catch (err) {
+    json(res, 1, err, '查询失败!')
+  }
+})
+
 // 不分页
 router.get('/article_all_list', async function (req, res, next) {
   try {
@@ -170,17 +193,9 @@ router.get('/article_detail', async function (req, res, next) {
 router.post('/add_article', async function (req, res, next) {
   try {
     const params = req.body;
-    const {
-      title,
-      author,
-      extra_title,
-      banner,
-      tags, // 标签id集合 英文逗号拼接
-      content,
-      git
-    } = params
-    let sql = ''
+    const { title, author, extra_title, banner, tags, content, git } = params
     const tagIds = tags.split(',')
+    let sql = ''
     const qsArr = new Array(tagIds.length).fill('(?, ?)')
     const valStr = qsArr.join(',')
     const relationSql = `INSERT INTO article_tag(article_id, tag_id) VALUES${valStr};`
