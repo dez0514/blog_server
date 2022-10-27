@@ -4,12 +4,9 @@ const dayjs = require('dayjs')
 const query = require('../utils/pool_async')
 const json = require('../utils/response')
 const util = require('../utils/util')
-// 文章列表 都做分页 3处接口 type 区分归档查询
-// 1. 首页查询： 最新(默认就时间降序),最热（type === 'hot'），最热按照views降序，导航标签按照tag查询，tagList(关联表)
-// 2. type === 'archive' 配合 year month 归档查询(查 createTime, updateTime)
-// 3. keywords 检索匹配, 查 title,extra_title,文章的标签(关联表) 存在
-// 4. 分页 要查对应条件下的 总条数。。。
-// todo: 重写。。
+// 文章列表 (分页要查对应条件下的总条数)
+// 1. 首页查询： 最新(默认就时间降序),最热（ishot），最热按照views降序，导航标签按照tag查询
+// 2. keywords 检索匹配, 查 title,extra_title,文章的标签(关联表) 存在
 router.get('/article_list', async function (req, res, next) {
   try {
     let params = req.query;
@@ -27,20 +24,22 @@ router.get('/article_list', async function (req, res, next) {
     } else { // 最热：views降序，如果相等， 就按照时间降序
       orderBY = 'views DESC, IFNULL(update_time, create_time) DESC'
     }
-    if (keyword) {
-      // 先查 标签name中 包含keyword 的标签id, 然后查出关联表中这些标签id对应的文章id,
-      const or_sql = `select article_id from article_tag t2 right join  tags t1 on t2.tag_id=t1.id where name like concat('%',?,'%')`
-      keywordWhere = `where (title like concat('%',?,'%') or extra_title like concat('%',?,'%') or (id in ${or_sql}))`
-      keywordArr = [keyword, keyword, keyword]
-    }
-    if (!tag) {
+    if (!tag) { // 没有tag时 考虑筛选keyword
+      if (keyword) {
+        // 先查 标签name中 包含keyword 的标签id, 然后查出关联表中这些标签id对应的文章id,
+        const or_sql = `select article_id from article_tag t2 right join  tags t1 on t2.tag_id=t1.id where name like concat('%',?,'%')`
+        keywordWhere = `where (title like concat('%',?,'%') or extra_title like concat('%',?,'%') or (id in ${or_sql}))`
+        keywordArr = [keyword, keyword, keyword]
+      }
       sql = `SELECT COUNT(*) FROM articles ${keywordWhere}; SELECT * FROM articles ${keywordWhere} ORDER BY ${orderBY} limit ${start},${pageSize};`
       sqlValArr = [...keywordArr, ...keywordArr] // 几个问号 就要写几个值
-    } else { //接收到tag 按照tagname查询关联表
+    } else { // 不考虑keyword
+      // 接收到tag的name，查询tag表查出tag的id,查出id对应关联表中的tag_id, 查出文章id, 查出文章列表
       // 该tag的文章总数量 即查：先查出该标签id, 然后关联表中该标签id的数量即为 查询的tag条件下的 文章总数量
-      // `select id from tags where name=?`
       const count_sql = `select count(*) from article_tag t2 right join tags t1 on t2.tag_id=t1.id where name=?;`
-      sql = `${count_sql}select t3.* from articles t3 right join(select t2.article_id from (select * from tags where id in (select tag_id from article_tag)) t1 left join article_tag t2 on t1.id=t2.tag_id where t1.name = ?) t4 on t3.id=t4.article_id;`
+      // const data_sql = `select t3.* from articles t3 right join(select t2.article_id from (select * from tags where id in (select tag_id from article_tag)) t1 left join article_tag t2 on t1.id=t2.tag_id where t1.name = ?) t4 on t3.id=t4.article_id;`
+      const data_sql = `select * from articles t1 right join(select * from article_tag where tag_id in (select id from tags where name=?)) t2 on t1.id=t2.article_id;`
+      sql = `${count_sql}${data_sql}`
       sqlValArr = [tag, tag]
     }
     // console.log('sql===', sql)
@@ -75,8 +74,7 @@ router.get('/article_list', async function (req, res, next) {
     json(res, 1, err, '查询失败!')
   }
 });
-
-// 文章归档
+// 归档-文章列表  配合 year month 归档查询
 router.get('/article_archive_list', async function (req, res, next) {
   try {
     let params = req.query;
@@ -131,7 +129,44 @@ router.get('/article_archive_list', async function (req, res, next) {
     json(res, 1, err, '查询失败!')
   }
 })
-
+// 归档时间列表, 查询文章的创建和更新时间 处理成时间年月
+router.get('/archive_timeline', async function (req, res, next) {
+  try {
+    const sql = `select create_time,update_time from articles`
+    const result = await query(sql, [])
+    const temp = [] // 格式：[{ year: xxx, monthArr: [xxx, xxx, xxx] }]
+    result.forEach(item =>  {
+      if (item.create_time) {
+        const cdate = dayjs(item.create_time).format('YYYY-MM')
+        const [cyear, cmonth] = cdate.split('-')
+        const findex = temp.findIndex(inner => inner.year === cyear)
+        if(findex > -1) { // 找到说明存在此年份，再找找有没有此月份，没有就push月,找到就说明有了
+          if(!temp[findex].monthArr.includes(cmonth)) {
+            temp[findex].monthArr.push(cmonth)
+          }
+        } else { // 没找到此年就push
+          temp.push({ year: cyear, monthArr: [cmonth]})
+        }
+      }
+      // 逻辑和上面create_time 一样
+      if (item.update_time) {
+        const udate = dayjs(item.update_time).format('YYYY-MM')
+        const [uyear, umonth] = udate.split('-')
+        const findex = temp.findIndex(inner => inner.year === uyear)
+        if(findex > -1) {
+          if(!temp[findex].monthArr.includes(umonth)) {
+            temp[findex].monthArr.push(umonth)
+          }
+        } else {
+          temp.push({ year: uyear, monthArr: [umonth]})
+        }
+      }
+    })
+    json(res, 0, temp, '查询成功!')
+  } catch(err) {
+    json(res, 1, err, '查询失败!')
+  }
+})
 // 不分页
 router.get('/article_all_list', async function (req, res, next) {
   try {

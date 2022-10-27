@@ -48,7 +48,7 @@ app.use('/api', async(req, res, next) => {
     next()
     return
   }
-  const noNeedCheckUrls = ['/user/register', '/user/login', '/user/repos']
+  const noNeedCheckUrls = ['/user/register', '/user/login', '/user/repos', '/article/archive_timeline']
   if (noNeedCheckUrls.includes(req.path)) { // 无需校验token的接口
     next()
     return
