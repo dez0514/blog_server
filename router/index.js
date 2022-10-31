@@ -37,12 +37,12 @@ router.get('/article_list', async function (req, res, next) {
       // 接收到tag的name，查询tag表查出tag的id,查出id对应关联表中的tag_id, 查出文章id, 查出文章列表
       // 该tag的文章总数量 即查：先查出该标签id, 然后关联表中该标签id的数量即为 查询的tag条件下的 文章总数量
       const count_sql = `select count(*) from article_tag t2 right join tags t1 on t2.tag_id=t1.id where name=?;`
-      // const data_sql = `select t3.* from articles t3 right join(select t2.article_id from (select * from tags where id in (select tag_id from article_tag)) t1 left join article_tag t2 on t1.id=t2.tag_id where t1.name = ?) t4 on t3.id=t4.article_id;`
-      const data_sql = `select * from articles t1 right join(select * from article_tag where tag_id in (select id from tags where name=?)) t2 on t1.id=t2.article_id;`
+      const data_sql = `select t3.* from articles t3 right join(select t2.article_id from (select * from tags where id in (select tag_id from article_tag)) t1 left join article_tag t2 on t1.id=t2.tag_id where t1.name = ?) t4 on t3.id=t4.article_id;`
+      // const data_sql = `select * from articles t1 right join(select * from article_tag where tag_id in (select id from tags where name=?)) t2 on t1.id=t2.article_id;`
       sql = `${count_sql}${data_sql}`
       sqlValArr = [tag, tag]
     }
-    // console.log('sql===', sql)
+    console.log('sql===', sql)
     if (!sql) {
       json(res, 1, null, '查询失败!')
       return
