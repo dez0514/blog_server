@@ -28,7 +28,7 @@ router.get('/article_list', async function (req, res, next) {
       if (keyword) {
         // 先查 标签name中 包含keyword 的标签id, 然后查出关联表中这些标签id对应的文章id,
         const or_sql = `select article_id from article_tag t2 right join  tags t1 on t2.tag_id=t1.id where name like concat('%',?,'%')`
-        keywordWhere = `where (title like concat('%',?,'%') or extra_title like concat('%',?,'%') or (id in ${or_sql}))`
+        keywordWhere = `where id in (${or_sql}) or title like concat('%',?,'%') or extra_title like concat('%',?,'%')`
         keywordArr = [keyword, keyword, keyword]
       }
       sql = `SELECT COUNT(*) FROM articles ${keywordWhere}; SELECT * FROM articles ${keywordWhere} ORDER BY ${orderBY} limit ${start},${pageSize};`
