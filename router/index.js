@@ -9,6 +9,7 @@ const util = require('../utils/util')
 // 2. keywords 检索匹配, 查 title,extra_title,文章的标签(关联表) 存在
 router.get('/article_list', async function (req, res, next) {
   try {
+    // console.log('see===', req.session)
     let params = req.query;
     let { pageSize, pageNum, ishot, tag, keyword } = params;
     if (!pageSize) { pageSize = 10 }
@@ -136,19 +137,6 @@ router.get('/archive_timeline', async function (req, res, next) {
     const result = await query(sql, [])
     const temp = [] // 格式：[{ year: xxx, monthArr: [xxx, xxx, xxx] }]
     result.forEach(item =>  {
-      if (item.create_time) {
-        const cdate = dayjs(item.create_time).format('YYYY-MM')
-        const [cyear, cmonth] = cdate.split('-')
-        const findex = temp.findIndex(inner => inner.year === cyear)
-        if(findex > -1) { // 找到说明存在此年份，再找找有没有此月份，没有就push月,找到就说明有了
-          if(!temp[findex].monthArr.includes(cmonth)) {
-            temp[findex].monthArr.push(cmonth)
-          }
-        } else { // 没找到此年就push
-          temp.push({ year: cyear, monthArr: [cmonth]})
-        }
-      }
-      // 逻辑和上面create_time 一样
       if (item.update_time) {
         const udate = dayjs(item.update_time).format('YYYY-MM')
         const [uyear, umonth] = udate.split('-')
@@ -159,6 +147,17 @@ router.get('/archive_timeline', async function (req, res, next) {
           }
         } else {
           temp.push({ year: uyear, monthArr: [umonth]})
+        }
+      } else if (item.create_time) { // 没有更新时间 就按照 创建时间
+        const cdate = dayjs(item.create_time).format('YYYY-MM')
+        const [cyear, cmonth] = cdate.split('-')
+        const findex = temp.findIndex(inner => inner.year === cyear)
+        if(findex > -1) { // 找到说明存在此年份，再找找有没有此月份，没有就push月,找到就说明有了
+          if(!temp[findex].monthArr.includes(cmonth)) {
+            temp[findex].monthArr.push(cmonth)
+          }
+        } else { // 没找到此年就push
+          temp.push({ year: cyear, monthArr: [cmonth]})
         }
       }
     })

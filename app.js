@@ -12,6 +12,10 @@ const tokenjs = require('./utils/token')
 const json = require('./utils/response')
 const query = require('./utils/pool_async')
 const utils = require('./utils/util')
+// const cookieParser = require('cookie-parser')
+// const session = require("express-session")
+// const RedisStore = require("connect-redis")(session)
+// const redis = require('./redis/redis.js').redis;
 
 dotenv.config({
   path: path.join(__dirname, './config/config.env')
@@ -25,10 +29,26 @@ app.all('*', function(req, res, next){
   // res.header("Content-Type", "application/json;charset=utf-8") // node 图片中文文件名时乱码
   res.header('Access-Control-Allow-Headers', 'Content-Type, Content-Length, token, Accept,X-Requested-With')
   res.header('Access-Control-Expose-Headers', 'token')
-  // res.header('X-Powered-By', ' 3.2.1')
-  next()
+  res.header('X-Powered-By', ' 3.2.1')
+  if (req.method === 'OPTIONS') {
+    res.send(200);
+  } else {
+    next()
+  }
 })
-
+// const salt = 'sessiontest'
+// app.use(session({
+//   store: new RedisStore({
+//     client: redis,
+//     prefix: 'zwd'
+//   }),
+//   cookie: { maxAge: 1 * 60 * 60 * 1000 }, //默认1小时
+//   secret: salt,
+//   resave: true,
+//   saveUninitialized: true
+// }));
+// app.use(cookieParser())
+app.use(cookieParser(salt));
 app.use(express.json())
 app.use(express.urlencoded({extended: false}))
 app.use(morgan("dev"))

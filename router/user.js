@@ -50,6 +50,13 @@ router.post('/login', async function (req, res) {
     const { token, encrypted } = tokenjs.getToken({ username }, '1day') // 120s 存未加密的 ，响应加密的
     const updateSql = `UPDATE users SET token=? WHERE username=?;`
     const updateResult = await query(updateSql, [token, username])
+
+    // const user = {
+    //   username: username,
+    //   token: token // 未加密
+    // }
+    // req.session.user = user
+
     // const refreshTokenData = tokenjs.getToken({ username }, '600s')
     // const refresh_token = refreshTokenData.token
     // const updateSql = `UPDATE users SET token=?,refresh_token=? WHERE username=?;`
