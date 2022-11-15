@@ -48,7 +48,7 @@ app.all('*', function(req, res, next){
 //   saveUninitialized: true
 // }));
 // app.use(cookieParser())
-app.use(cookieParser(salt));
+// app.use(cookieParser(salt));
 app.use(express.json())
 app.use(express.urlencoded({extended: false}))
 app.use(morgan("dev"))
