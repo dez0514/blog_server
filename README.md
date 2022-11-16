@@ -66,6 +66,52 @@
 5. 标签增删改时 同时操作关联表
 6. 查询时 利用 左右连接 查询 关联表
 
+#### resumes 基本信息
+<!-- 只存一条，每次更新都只更新这一条 -->
+|  Field  |  Type  |  Null  |  Key  | Default | Extra |
+|  :----: | :----: | :----: | :----: | :----: | :----: |
+|  id | int unsigned | no | pri | null | auto_increment |
+|  name | varchar(100) | no | -- | null | -- |
+|  gendar | varchar(10) | no | -- | null | -- |
+|  school | varchar(100) | no | -- | null | -- |
+|  profession | varchar(100) | no | -- | null | -- |
+|  graduationDate | varchar(100) | no | -- | null | -- |
+|  blog | varchar(100) | no | -- | null | -- |
+|  github | varchar(100) | no | -- | null | -- |
+|  cell | varchar(100) | no | -- | null | -- |
+|  email | varchar(100) | no | -- | null | -- |
+|  wechat | varchar(100) | no | -- | null | -- |
+|  qq | varchar(100) | no | -- | null | -- |
+|  job | varchar(100) | no | -- | null | -- |
+|  extra | longtext | no | -- | null | -- |
+|  update_time | datetime | yes | -- | current_timestamp | default_generated |
+
+#### companys
+|  Field  |  Type  |  Null  |  Key  | Default | Extra |
+|  :----: | :----: | :----: | :----: | :----: | :----: |
+|  id | int unsigned | no | pri | null | auto_increment |
+|  name | varchar(100) | no | uni | null | -- |
+|  range | varchar(100) | no | -- | null | -- |
+|  sort | int | no | -- | null | -- |
+
+#### projects
+|  Field  |  Type  |  Null  |  Key  | Default | Extra |
+|  :----: | :----: | :----: | :----: | :----: | :----: |
+|  id | int unsigned | no | pri | null | auto_increment |
+|  name | varchar(100) | no | uni | null | -- |
+|  intro | longtext | no | -- | null | -- |
+|  technology | varchar(100) | no | -- | null | -- |
+|  describe | longtext | no | -- | null | -- |
+|  sort | int | no | -- | null | -- |
+<!-- status 是否显示在简历中 -->
+|  status | tinyint(1) | no | -- | null | -- |
+#### company_project
+|  Field  |  Type  |  Null  |  Key  | Default | Extra |
+|  :----: | :----: | :----: | :----: | :----: | :----: |
+|  id | int unsigned | no | pri | null | auto_increment |
+|  company_id | int | no | -- | null | -- |
+|  project_id | int | no | -- | null | -- |
+
 ### mysql & database helper
 cmd：
 1. mysql -u root -p
