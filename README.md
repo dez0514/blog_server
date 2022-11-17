@@ -66,7 +66,7 @@
 5. 标签增删改时 同时操作关联表
 6. 查询时 利用 左右连接 查询 关联表
 
-#### resumes 基本信息
+#### resumes
 <!-- 只存一条，每次更新都只更新这一条 -->
 |  Field  |  Type  |  Null  |  Key  | Default | Extra |
 |  :----: | :----: | :----: | :----: | :----: | :----: |
@@ -78,21 +78,36 @@
 |  graduationDate | varchar(100) | no | -- | null | -- |
 |  blog | varchar(100) | no | -- | null | -- |
 |  github | varchar(100) | no | -- | null | -- |
-|  cell | varchar(100) | no | -- | null | -- |
+|  phone | varchar(100) | no | -- | null | -- |
 |  email | varchar(100) | no | -- | null | -- |
 |  wechat | varchar(100) | no | -- | null | -- |
 |  qq | varchar(100) | no | -- | null | -- |
 |  job | varchar(100) | no | -- | null | -- |
 |  extra | longtext | no | -- | null | -- |
+|  create_time | datetime | yes | -- | current_timestamp | default_generated |
 |  update_time | datetime | yes | -- | current_timestamp | default_generated |
+
+#### resume_project
+|  Field  |  Type  |  Null  |  Key  | Default | Extra |
+|  :----: | :----: | :----: | :----: | :----: | :----: |
+|  id | int unsigned | no | pri | null | auto_increment |
+|  resume_id | int | no | -- | null | -- |
+|  project_id | int | no | -- | null | -- |
 
 #### companys
 |  Field  |  Type  |  Null  |  Key  | Default | Extra |
 |  :----: | :----: | :----: | :----: | :----: | :----: |
 |  id | int unsigned | no | pri | null | auto_increment |
 |  name | varchar(100) | no | uni | null | -- |
-|  range | varchar(100) | no | -- | null | -- |
-|  sort | int | no | -- | null | -- |
+|  durings | varchar(100) | no | -- | null | -- |
+|  sort | tinyint(1) | no | -- | null | -- |
+
+```
+create table if not exists `companys` (`id` int unsigned auto_increment, `name` varchar(100) not null,  `durings` varchar(100) not null,`sort` int not null, `status` tinyint(1) not null, create_time datetime default current_timestamp, update_time datetime default current_timestamp, primary key(`id`))engine=InnoDB Default charset=utf8;
+
+alter table companys modify column sort int not null;
+alter table companys add sort int not null;
+```
 
 #### projects
 |  Field  |  Type  |  Null  |  Key  | Default | Extra |
@@ -101,16 +116,28 @@
 |  name | varchar(100) | no | uni | null | -- |
 |  intro | longtext | no | -- | null | -- |
 |  technology | varchar(100) | no | -- | null | -- |
-|  describe | longtext | no | -- | null | -- |
+<!-- desc, describe, range 都是内部关键字，不能用 -->
+|  details | longtext | no | -- | null | -- |
+<!-- 新增全部为0 然后排序时批量修改 -->
 |  sort | int | no | -- | null | -- |
 <!-- status 是否显示在简历中 -->
 |  status | tinyint(1) | no | -- | null | -- |
+
+```
+create table if not exists `projects` (`id` int unsigned auto_increment, `name` varchar(100) not null, `intro` longtext not null,technology varchar(100) not null,`details` longtext not null,`sort` int default 0, `status` tinyint(1) default 0, create_time datetime default current_timestamp, update_time datetime default current_timestamp, primary key(`id`))engine=InnoDB Default charset=utf8;
+
+alter table projects modify column status int default 0;
+```
 #### company_project
 |  Field  |  Type  |  Null  |  Key  | Default | Extra |
 |  :----: | :----: | :----: | :----: | :----: | :----: |
 |  id | int unsigned | no | pri | null | auto_increment |
 |  company_id | int | no | -- | null | -- |
 |  project_id | int | no | -- | null | -- |
+
+```
+create table if not exists `company_project` (`id` int unsigned auto_increment, `company_id` int not null, `project_id` int not null, primary key(`id`))engine=InnoDB Default charset=utf8;
+```
 
 ### mysql & database helper
 cmd：
@@ -134,11 +161,15 @@ CREATE TABLE articles(id INT NOT NULL AUTO_INCREMENT, title VARCHAR(100) NOT NUL
 
 CREATE TABLE article_tag(id INT NOT NULL AUTO_INCREMENT,  article_id INT NOT NULL, tag_id INT NOT NULL, PRIMARY KEY ( id ))ENGINE=InnoDB DEFAULT CHARSET=utf8;
 //修改列属性
-ALTER TABLE articles CHANGE COLUMN id
-id INT UNSIGNED AUTO_INCREMENT;
+ALTER TABLE table_name MODIFY column_name datatype;  
 
-alter table tags change column name
-name varchar(40) not NULL unique;
+ALTER TABLE articles CHANGE COLUMN id INT UNSIGNED AUTO_INCREMENT;
+
+alter table tags change column name varchar(40) not NULL unique;
+
+// 新增列属性
+ALTER TABLE 表名 ADD 新字段名 数据类型 [约束条件] FIRST;
+ALTER TABLE 表名 ADD 新字段名 数据类型 [约束条件] AFTER <已经存在的字段名>;
 
 // 入门级sql要会啊...
 lef join, right join, 临时表

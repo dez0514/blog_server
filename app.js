@@ -6,6 +6,8 @@ const dotenv = require('dotenv')
 const path = require('path')
 const articleApi = require('./router')
 const tagApi = require('./router/tag')
+const companyApi = require('./router/company')
+const projectApi = require('./router/projects')
 const fileApi = require('./router/file')
 const userApi = require('./router/user')
 const tokenjs = require('./utils/token')
@@ -31,7 +33,7 @@ app.all('*', function(req, res, next){
   res.header('Access-Control-Expose-Headers', 'token')
   res.header('X-Powered-By', ' 3.2.1')
   if (req.method === 'OPTIONS') {
-    res.send(200);
+    res.sendStatus(200);
   } else {
     next()
   }
@@ -134,6 +136,8 @@ app.use('/api', async(req, res, next) => {
 app.use('/imgs', express.static(path.join(__dirname, 'imgs')))
 app.use('/api/article', articleApi)
 app.use('/api/tag', tagApi)
+app.use('/api/company', companyApi)
+app.use('/api/project', projectApi)
 app.use('/api/file', fileApi)
 app.use('/api/user', userApi)
 
