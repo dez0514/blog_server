@@ -72,9 +72,12 @@
 |  :----: | :----: | :----: | :----: | :----: | :----: |
 |  id | int unsigned | no | pri | null | auto_increment |
 |  name | varchar(100) | no | -- | null | -- |
+|  birthday | varchar(20) | -- | -- | null | -- |
 |  avatar | varchar(100) | -- | -- | null | -- |
 |  gendar | varchar(10) | no | -- | null | -- |
 |  school | varchar(100) | no | -- | null | -- |
+|  skills | varchar(100) | -- | -- | null | -- |
+|  location | varchar(100) | -- | -- | null | -- |
 |  profession | varchar(100) | no | -- | null | -- |
 |  graduationDate | varchar(100) | no | -- | null | -- |
 |  blog | varchar(100) | no | -- | null | -- |
@@ -91,6 +94,9 @@
 ```
 create table if not exists `resumes` (`id` int unsigned auto_increment, `name` varchar(100) not null,  `gendar` varchar(10) not null,`school` varchar(100) not null,`profession` varchar(100),`graduationDate` varchar(100),`blog` varchar(100),`github` varchar(100),`phone` varchar(100) not null,`email` varchar(100),`wechat` varchar(100),`qq` varchar(100),`job` varchar(100) not null, `extra` longtext, create_time datetime default current_timestamp, update_time datetime default current_timestamp, primary key(`id`))engine=InnoDB Default charset=utf8;
 
+birthday
+skills
+location
 alter table resumes add column avatar varchar(100);
 ```
 
