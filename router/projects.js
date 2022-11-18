@@ -14,17 +14,14 @@ router.get('/project_all_list', async function (req, res, next) {
       const sqlstr = `select t.*, r.project_id from companys t left join company_project r on t.id = r.company_id where r.project_id in (${ids});`
       const result = await query(sqlstr, [])
       data.forEach(item => {
-        item.companyInfo = []
-        result.forEach(inner => {
-          if (inner && inner.project_id === item.id) {
-            item.companyInfo.push({
-              companyId: inner.id,
-              name: inner.name,
-              durings: inner.durings,
-              sort: inner.sort
-            })
-          }
-        })
+        // 一个project只会绑定一个company
+        const fitem = result.find(inner => inner && inner.project_id === item.id)
+        if (fitem) {
+          item.companyId = fitem.id
+          item.companyName = fitem.name
+          item.durings = fitem.durings
+          item.companySort = fitem.sort
+        }
       })
     }
     // console.log(data)
@@ -48,20 +45,17 @@ router.get('/project_list', async function (req, res, next) {
     const data = (result && result.length > 1) ? result[1] : []
     if (data.length > 0) {
       const ids = data.map(item => item.id)
-      const sqlstr = `select t.*, r.project_id from companys t left join company_project r on t.id = r.company_id where r.project_id in (${ids});`
+      const sqlstr = `select c.*, cp.project_id from companys c left join company_project cp on c.id = cp.company_id where cp.project_id in (${ids});`
       const result = await query(sqlstr, [])
       data.forEach(item => {
-        item.companyInfo = []
-        result.forEach(inner => {
-          if (inner && inner.project_id === item.id) {
-            item.companyInfo.push({
-              companyId: inner.id,
-              name: inner.name,
-              durings: inner.durings,
-              sort: inner.sort
-            })
-          }
-        })
+        // 一个project只会绑定一个company
+        const fitem = result.find(inner => inner && inner.project_id === item.id)
+        if (fitem) {
+          item.companyId = fitem.id
+          item.companyName = fitem.name
+          item.durings = fitem.durings
+          item.companySort = fitem.sort
+        }
       })
     }
     json(res, 0, data, '查询成功!', total)
@@ -72,15 +66,15 @@ router.get('/project_list', async function (req, res, next) {
 router.post('/add_project', async function (req, res, next) {
   try {
     let params = req.body;
-    const { name, intro, technology, details, companyId, id } = params
+    const { name, intro, technology, details, imgList, companyId, id } = params
     const sort = params.sort || 0
     const status = params.status || 0
     let vallist = []
     let sql = ''
     if(id) { // 编辑
       const update_time = dayjs(new Date()).format('YYYY-MM-DD HH:mm:ss')
-      vallist = [name, intro, technology, details, sort, status, update_time]
-      sql = `UPDATE projects SET name=?, intro=?, technology=?, details=?, sort=?, status=?,update_time=? WHERE id=?`
+      vallist = [name, intro, technology, details, imgList, sort, status, update_time]
+      sql = `UPDATE projects SET name=?, intro=?, technology=?, details=?, imgList=?, sort=?, status=?,update_time=? WHERE id=?`
       const list = [...vallist, id]
       const result = await query(sql, list)
       if (result && result.affectedRows && result.affectedRows > 0) {
@@ -98,8 +92,8 @@ router.post('/add_project', async function (req, res, next) {
         json(res, 1, result, '编辑失败!')
       }
     } else {
-      vallist = [name, intro, technology, details, sort, status]
-      sql = 'INSERT INTO projects(name, intro, technology, details, sort, status) VALUES(?,?,?,?,?,?)'
+      vallist = [name, intro, technology, details, imgList, sort, status]
+      sql = 'INSERT INTO projects(name, intro, technology, details, imgList, sort, status) VALUES(?,?,?,?,?,?,?)'
       const result = await query(sql, vallist)
       if (result && result.affectedRows && result.affectedRows > 0) {
         // 插入关联表

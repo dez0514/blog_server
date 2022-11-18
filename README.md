@@ -72,6 +72,7 @@
 |  :----: | :----: | :----: | :----: | :----: | :----: |
 |  id | int unsigned | no | pri | null | auto_increment |
 |  name | varchar(100) | no | -- | null | -- |
+|  avatar | varchar(100) | -- | -- | null | -- |
 |  gendar | varchar(10) | no | -- | null | -- |
 |  school | varchar(100) | no | -- | null | -- |
 |  profession | varchar(100) | no | -- | null | -- |
@@ -87,12 +88,22 @@
 |  create_time | datetime | yes | -- | current_timestamp | default_generated |
 |  update_time | datetime | yes | -- | current_timestamp | default_generated |
 
+```
+create table if not exists `resumes` (`id` int unsigned auto_increment, `name` varchar(100) not null,  `gendar` varchar(10) not null,`school` varchar(100) not null,`profession` varchar(100),`graduationDate` varchar(100),`blog` varchar(100),`github` varchar(100),`phone` varchar(100) not null,`email` varchar(100),`wechat` varchar(100),`qq` varchar(100),`job` varchar(100) not null, `extra` longtext, create_time datetime default current_timestamp, update_time datetime default current_timestamp, primary key(`id`))engine=InnoDB Default charset=utf8;
+
+alter table resumes add column avatar varchar(100);
+```
+
 #### resume_project
 |  Field  |  Type  |  Null  |  Key  | Default | Extra |
 |  :----: | :----: | :----: | :----: | :----: | :----: |
 |  id | int unsigned | no | pri | null | auto_increment |
 |  resume_id | int | no | -- | null | -- |
 |  project_id | int | no | -- | null | -- |
+
+```
+create table if not exists `resume_project` (`id` int unsigned auto_increment, `resume_id` int not null, `project_id` int not null, primary key(`id`))engine=InnoDB Default charset=utf8;
+```
 
 #### companys
 |  Field  |  Type  |  Null  |  Key  | Default | Extra |
@@ -122,6 +133,8 @@ alter table companys add sort int not null;
 |  sort | int | no | -- | null | -- |
 <!-- status 是否显示在简历中 -->
 |  status | tinyint(1) | no | -- | null | -- |
+<!-- 图片地址，分号隔开 -->
+|  imgList | longtext | -- | -- | null | -- |
 
 ```
 create table if not exists `projects` (`id` int unsigned auto_increment, `name` varchar(100) not null, `intro` longtext not null,technology varchar(100) not null,`details` longtext not null,`sort` int default 0, `status` tinyint(1) default 0, create_time datetime default current_timestamp, update_time datetime default current_timestamp, primary key(`id`))engine=InnoDB Default charset=utf8;
