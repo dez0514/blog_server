@@ -7,7 +7,7 @@ const dayjs = require('dayjs')
 // 列表
 router.get('/project_all_list', async function (req, res, next) {
   try {
-    const sql = 'SELECT * FROM projects'
+    const sql = 'SELECT * FROM projects ORDER BY sort ASC, IFNULL(update_time, create_time) DESC'
     const data = await query(sql, [])
     if (data.length > 0) {
       const ids = data.map(item => item.id)
@@ -39,7 +39,7 @@ router.get('/project_list', async function (req, res, next) {
     if (!pageSize) { pageSize = 10 }
     if (!pageNum) { pageNum = 1 }
     let start = (pageNum - 1) * pageSize
-    let sql = `SELECT COUNT(*) FROM projects; SELECT * FROM projects limit ${start},${pageSize};`
+    let sql = `SELECT COUNT(*) FROM projects; SELECT * FROM projects ORDER BY sort ASC, IFNULL(update_time, create_time) DESC limit ${start},${pageSize};`
     const result = await query(sql, [])
     const total = (result && result[0] && result[0][0] && (result[0][0]['COUNT(*)'] || result[0][0]['COUNT(1)'])) || 0
     const data = (result && result.length > 1) ? result[1] : []
@@ -68,13 +68,12 @@ router.post('/add_project', async function (req, res, next) {
     let params = req.body;
     const { name, intro, technology, details, imgList, companyId, id } = params
     const sort = params.sort || 0
-    const status = params.status || 0
     let vallist = []
     let sql = ''
     if(id) { // 编辑
       const update_time = dayjs(new Date()).format('YYYY-MM-DD HH:mm:ss')
-      vallist = [name, intro, technology, details, imgList, sort, status, update_time]
-      sql = `UPDATE projects SET name=?, intro=?, technology=?, details=?, imgList=?, sort=?, status=?,update_time=? WHERE id=?`
+      vallist = [name, intro, technology, details, imgList, sort, update_time]
+      sql = `UPDATE projects SET name=?, intro=?, technology=?, details=?, imgList=?, sort=?,update_time=? WHERE id=?`
       const list = [...vallist, id]
       const result = await query(sql, list)
       if (result && result.affectedRows && result.affectedRows > 0) {
@@ -92,8 +91,8 @@ router.post('/add_project', async function (req, res, next) {
         json(res, 1, result, '编辑失败!')
       }
     } else {
-      vallist = [name, intro, technology, details, imgList, sort, status]
-      sql = 'INSERT INTO projects(name, intro, technology, details, imgList, sort, status) VALUES(?,?,?,?,?,?,?)'
+      vallist = [name, intro, technology, details, imgList, sort]
+      sql = 'INSERT INTO projects(name, intro, technology, details, imgList, sort) VALUES(?,?,?,?,?,?)'
       const result = await query(sql, vallist)
       if (result && result.affectedRows && result.affectedRows > 0) {
         // 插入关联表
@@ -114,6 +113,38 @@ router.post('/add_project', async function (req, res, next) {
     json(res, 1, err, '操作失败!')
   }
 });
+
+// 更新排序，sort
+router.post('/sort_project', async function (req, res, next) {
+  try {
+    const params = req.body;
+    const { projects } = qs.parse(params)
+    if(!Array.isArray(projects)) {
+      json(res, 1, null, '参数错误!')
+      return
+    }
+    const qstr = projects.map(item => `(?, ?, ?, ?, ?, ?, ?)`).join(',')
+    let temp = []
+    projects.forEach(item => {
+      temp.push(item.id)
+      temp.push(item.name)
+      temp.push(item.intro)
+      temp.push(item.technology)
+      temp.push(item.details)
+      temp.push(item.imgList)
+      temp.push(item.sort)
+    })
+    const sql = `replace into projects (id, name, intro, technology, details, imgList, sort) values ${qstr}`
+    const result = await query(sql, [...temp])
+    if (result && result.affectedRows && result.affectedRows > 0) {
+      json(res, 0, null, '操作成功!')
+    } else {
+      json(res, 1, result, '操作失败!')
+    }
+  } catch(err) {
+    json(res, 1, err, '操作失败!')
+  }
+})
 
 router.post('/delete_project', async function (req, res, next) {
   try {
