@@ -68,28 +68,30 @@
 
 #### resumes
 <!-- 只存一条，每次更新都只更新这一条 -->
-|  Field  |  Type  |  Null  |  Key  | Default | Extra |
-|  :----: | :----: | :----: | :----: | :----: | :----: |
-|  id | int unsigned | no | pri | null | auto_increment |
-|  name | varchar(100) | no | -- | null | -- |
-|  birthday | varchar(20) | -- | -- | null | -- |
-|  avatar | varchar(100) | -- | -- | null | -- |
-|  gendar | varchar(10) | no | -- | null | -- |
-|  school | varchar(100) | no | -- | null | -- |
-|  skills | varchar(100) | -- | -- | null | -- |
-|  location | varchar(100) | -- | -- | null | -- |
-|  profession | varchar(100) | no | -- | null | -- |
-|  graduationDate | varchar(100) | no | -- | null | -- |
-|  blog | varchar(100) | no | -- | null | -- |
-|  github | varchar(100) | no | -- | null | -- |
-|  phone | varchar(100) | no | -- | null | -- |
-|  email | varchar(100) | no | -- | null | -- |
-|  wechat | varchar(100) | no | -- | null | -- |
-|  qq | varchar(100) | no | -- | null | -- |
-|  job | varchar(100) | no | -- | null | -- |
-|  extra | longtext | no | -- | null | -- |
-|  create_time | datetime | yes | -- | current_timestamp | default_generated |
-|  update_time | datetime | yes | -- | current_timestamp | default_generated |
++----------------+--------------+------+-----+-------------------+-------------------+
+| Field          | Type         | Null | Key | Default           | Extra             |
++----------------+--------------+------+-----+-------------------+-------------------+
+| id             | int unsigned | NO   | PRI | NULL              | auto_increment    |
+| name           | varchar(100) | NO   |     | NULL              |                   |
+| birthday       | varchar(20)  | YES  |     | NULL              |                   |
+| avatar         | varchar(100) | YES  |     | NULL              |                   |
+| gendar         | varchar(10)  | NO   |     | NULL              |                   |
+| school         | varchar(100) | NO   |     | NULL              |                   |
+| skills         | varchar(100) | YES  |     | NULL              |                   |
+| location       | varchar(100) | YES  |     | NULL              |                   |
+| profession     | varchar(100) | YES  |     | NULL              |                   |
+| graduationDate | varchar(100) | YES  |     | NULL              |                   |
+| blog           | varchar(100) | YES  |     | NULL              |                   |
+| github         | varchar(100) | YES  |     | NULL              |                   |
+| phone          | varchar(100) | NO   |     | NULL              |                   |
+| email          | varchar(100) | YES  |     | NULL              |                   |
+| wechat         | varchar(100) | YES  |     | NULL              |                   |
+| qq             | varchar(100) | YES  |     | NULL              |                   |
+| job            | varchar(100) | NO   |     | NULL              |                   |
+| extra          | longtext     | YES  |     | NULL              |                   |
+| create_time    | datetime     | YES  |     | CURRENT_TIMESTAMP | DEFAULT_GENERATED |
+| update_time    | datetime     | YES  |     | CURRENT_TIMESTAMP | DEFAULT_GENERATED |
++----------------+--------------+------+-----+-------------------+-------------------+
 
 ```
 create table if not exists `resumes` (`id` int unsigned auto_increment, `name` varchar(100) not null,  `gendar` varchar(10) not null,`school` varchar(100) not null,`profession` varchar(100),`graduationDate` varchar(100),`blog` varchar(100),`github` varchar(100),`phone` varchar(100) not null,`email` varchar(100),`wechat` varchar(100),`qq` varchar(100),`job` varchar(100) not null, `extra` longtext, create_time datetime default current_timestamp, update_time datetime default current_timestamp, primary key(`id`))engine=InnoDB Default charset=utf8;
@@ -112,40 +114,42 @@ create table if not exists `resume_project` (`id` int unsigned auto_increment, `
 ```
 
 #### companys
-|  Field  |  Type  |  Null  |  Key  | Default | Extra |
-|  :----: | :----: | :----: | :----: | :----: | :----: |
-|  id | int unsigned | no | pri | null | auto_increment |
-|  name | varchar(100) | no | uni | null | -- |
-|  durings | varchar(100) | no | -- | null | -- |
-|  sort | tinyint(1) | no | -- | null | -- |
++-------------+--------------+------+-----+-------------------+-------------------+
+| Field       | Type         | Null | Key | Default           | Extra             |
++-------------+--------------+------+-----+-------------------+-------------------+
+| id          | int unsigned | NO   | PRI | NULL              | auto_increment    |
+| name        | varchar(100) | NO   |     | NULL              |                   |
+| durings     | varchar(100) | NO   |     | NULL              |                   |
+| sort        | int          | YES  |     | 0                 |                   |
+| create_time | datetime     | YES  |     | CURRENT_TIMESTAMP | DEFAULT_GENERATED |
+| update_time | datetime     | YES  |     | CURRENT_TIMESTAMP | DEFAULT_GENERATED |
++-------------+--------------+------+-----+-------------------+-------------------+
 
 ```
-create table if not exists `companys` (`id` int unsigned auto_increment, `name` varchar(100) not null,  `durings` varchar(100) not null,`sort` int not null, `status` tinyint(1) not null, create_time datetime default current_timestamp, update_time datetime default current_timestamp, primary key(`id`))engine=InnoDB Default charset=utf8;
+create table if not exists `companys` (`id` int unsigned auto_increment, `name` varchar(100) not null,  `durings` varchar(100) not null,`sort` int default 0, create_time datetime default current_timestamp, update_time datetime default current_timestamp, primary key(`id`))engine=InnoDB Default charset=utf8;
 
 alter table companys modify column sort int not null;
 alter table companys add sort int not null;
 ```
 
 #### projects
-|  Field  |  Type  |  Null  |  Key  | Default | Extra |
-|  :----: | :----: | :----: | :----: | :----: | :----: |
-|  id | int unsigned | no | pri | null | auto_increment |
-|  name | varchar(100) | no | uni | null | -- |
-|  intro | longtext | no | -- | null | -- |
-|  technology | varchar(100) | no | -- | null | -- |
-<!-- desc, describe, range 都是内部关键字，不能用 -->
-|  details | longtext | no | -- | null | -- |
-<!-- 新增全部为0 然后排序时批量修改 -->
-|  sort | int | no | -- | null | -- |
-<!-- status 是否显示在简历中 -->
-|  status | tinyint(1) | no | -- | null | -- |
-<!-- 图片地址，分号隔开 -->
-|  imgList | longtext | -- | -- | null | -- |
++-------------+--------------+------+-----+-------------------+-------------------+
+| Field       | Type         | Null | Key | Default           | Extra             |
++-------------+--------------+------+-----+-------------------+-------------------+
+| id          | int unsigned | NO   | PRI | NULL              | auto_increment    |
+| name        | varchar(100) | NO   |     | NULL              |                   |
+| intro       | longtext     | NO   |     | NULL              |                   |
+| technology  | varchar(100) | NO   |     | NULL              |                   |
+| details     | longtext     | NO   |     | NULL              |                   |
+| imgList     | longtext     | YES  |     | NULL              |                   |
+| sort        | int          | YES  |     | 0                 |                   |
+| create_time | datetime     | YES  |     | CURRENT_TIMESTAMP | DEFAULT_GENERATED |
+| update_time | datetime     | YES  |     | CURRENT_TIMESTAMP | DEFAULT_GENERATED |
++-------------+--------------+------+-----+-------------------+-------------------+
 
 ```
-create table if not exists `projects` (`id` int unsigned auto_increment, `name` varchar(100) not null, `intro` longtext not null,technology varchar(100) not null,`details` longtext not null,`sort` int default 0, `status` tinyint(1) default 0, create_time datetime default current_timestamp, update_time datetime default current_timestamp, primary key(`id`))engine=InnoDB Default charset=utf8;
+create table if not exists `projects` (`id` int unsigned auto_increment, `name` varchar(100) not null, `intro` longtext not null,technology varchar(100) not null,`details` longtext not null,`sort` int default 0,`imgList` longtext, create_time datetime default current_timestamp, update_time datetime default current_timestamp, primary key(`id`))engine=InnoDB Default charset=utf8;
 
-alter table projects modify column status int default 0;
 ```
 #### company_project
 |  Field  |  Type  |  Null  |  Key  | Default | Extra |
@@ -157,6 +161,27 @@ alter table projects modify column status int default 0;
 ```
 create table if not exists `company_project` (`id` int unsigned auto_increment, `company_id` int not null, `project_id` int not null, primary key(`id`))engine=InnoDB Default charset=utf8;
 ```
+### 登录，第三方登录 获取用户信息
+第三方登录时 获取信息存起来，就不用管第三方登录的时效了，blog自己的登录逻辑，时效。
+暂时不做第三方登录...。邮箱，昵称，网站（选填） 登录（第一次注册，登录），后面只要邮箱就行。
+### 留言，回复，文章评论 
+// 参考： https://www.cnblogs.com/wz-ii/p/13131501.html
+树形模式：至少需要两个表。额外还需要存用户信息：昵称，邮箱，头像（随机一张本地图片）。
+评论表：
+id, topic_id, topic_type, content, from_uid
+// topic_id 对应文章id, 留言板为空
+// topic_type 区分：文章评论 和 留言板
+回复表：
+id, comment_id, reply_id, reply_type, content, from_uid, to_uid
+// comment_id: 评论id, 回复的哪条评论。
+// reply_type：表示回复的类型，因为回复可以是针对评论的回复(comment)，也可以是针对回复的回复(reply)，区分两种情景。
+// reply_id：表示回复目标的id（回复的是哪一条 评论或回复），如果reply_type是comment，那reply_id＝commit_id，如果reply_type是reply，这表示这条回复的父回复。
+// to_uid: 回复的谁（用户）
+// from_uid: 页面提交发布的用户
+用户信息表：
+id, nickname, email, avatar, weburl
+
+// 回复时 需要发邮件。
 
 ### mysql & database helper
 cmd：
