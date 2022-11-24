@@ -181,7 +181,7 @@ id, comment_id, reply_id, reply_type, content, from_uid, to_uid
 用户信息表：
 id, nickname, email, avatar, weburl
 
-// 回复时 需要发邮件。
+// 作者回复时 发邮件。
 
 ### mysql & database helper
 cmd：
