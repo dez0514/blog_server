@@ -166,11 +166,12 @@ create table if not exists `company_project` (`id` int unsigned auto_increment, 
 暂时不做第三方登录...。邮箱，昵称，网站（选填） 登录（第一次注册，登录），后面只要邮箱就行。
 ### 留言，回复，文章评论 
 // 参考： https://www.cnblogs.com/wz-ii/p/13131501.html
-树形模式：至少需要两个表。额外还需要存用户信息：昵称，邮箱，头像（随机一张本地图片）。
+树形模式：至少需要两个表。
+还需要存用户信息：昵称，邮箱，头像（随机一张本地图片）。
 评论表：
 id, topic_id, topic_type, content, from_uid
 // topic_id 对应文章id, 留言板为空
-// topic_type 区分：文章评论 和 留言板
+// topic_type 区分：文章评论 和 留言板  'messageboard' | 'articleComment'
 回复表：
 id, comment_id, reply_id, reply_type, content, from_uid, to_uid
 // comment_id: 评论id, 回复的哪条评论。
