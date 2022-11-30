@@ -1,5 +1,5 @@
 import axios from 'axios'
-import rootConfig from '..config/config'
+import rootConfig from '../config/config'
 const qqHost = 'https://graph.qq.com'
 // 获取access_token by qq
 const getAccessTokenByQQ = async (code) => {
