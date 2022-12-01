@@ -15,7 +15,7 @@ const tokenjs = require('./utils/token')
 const json = require('./utils/response')
 const query = require('./utils/pool_async')
 const utils = require('./utils/util')
-// const cookieParser = require('cookie-parser')
+const cookieParser = require('cookie-parser')
 // const session = require("express-session")
 // const RedisStore = require("connect-redis")(session)
 // const redis = require('./redis/redis.js').redis;
@@ -50,7 +50,7 @@ app.all('*', function(req, res, next){
 //   resave: true,
 //   saveUninitialized: true
 // }));
-// app.use(cookieParser())
+app.use(cookieParser())
 // app.use(cookieParser(salt));
 app.use(express.json())
 app.use(express.urlencoded({extended: false}))

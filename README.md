@@ -28,36 +28,38 @@
 
 ### 数据表
 #### articles
-|  Field  |  Type  |  Null  |  Key  |  Default  | Extra |
-|  :----: | :----: | :----: | :----:  | :----: | :----: |
-|  id | int unsigned | no | pri | null | auto_increment |
-|  title | varchar(100) | no | -- | null | -- |
-|  author | varchar(30) | no | -- | null | -- |
-|  extra_title | varchar(100) | no | -- | null | -- |
-|  banner | varchar(100) | no | -- | null | -- |
-<!-- |  tags | varchar(100) | no | -- | null | -- | -->
-|  content | longtext | no | -- | null | -- |
-|  git | varchar(100) | no | -- | null | -- |
-|  views | int | yes | -- | 0 | -- |
-|  likes | int | yes | -- | 0 | -- |
-|  create_time | datetime | yes | -- | current_timestamp | default_generated |
-|  update_time | datetime | yes | -- | current_timestamp | default_generated |
-
++-------------+--------------+------+-----+-------------------+-------------------+
+| Field       | Type         | Null | Key | Default           | Extra             |
++-------------+--------------+------+-----+-------------------+-------------------+
+| id          | int unsigned | NO   | PRI | NULL              | auto_increment    |
+| title       | varchar(100) | NO   |     | NULL              |                   |
+| author      | varchar(30)  | NO   |     | NULL              |                   |
+| extra_title | varchar(100) | NO   |     | NULL              |                   |
+| banner      | varchar(100) | NO   |     | NULL              |                   |
+| content     | longtext     | NO   |     | NULL              |                   |
+| git         | varchar(100) | NO   |     | NULL              |                   |
+| views       | int          | YES  |     | 0                 |                   |
+| likes       | int          | YES  |     | 0                 |                   |
+| create_time | datetime     | YES  |     | CURRENT_TIMESTAMP | DEFAULT_GENERATED |
+| update_time | datetime     | YES  |     | CURRENT_TIMESTAMP | DEFAULT_GENERATED |
++-------------+--------------+------+-----+-------------------+-------------------+
 #### tags
-|  Field  |  Type  |  Null  |  Key  | Default | Extra |
-|  :----: | :----: | :----: | :----: | :----: | :----: |
-|  id | int unsigned | no | pri | null | auto_increment |
-|  name | varchar(40) | no | uni | null | -- |
-|  color | varchar(100) | no | -- | null | -- |
-|  icon | varchar(100) | no | -- | null | -- |
-
-
++-------+--------------+------+-----+---------+----------------+
+| Field | Type         | Null | Key | Default | Extra          |
++-------+--------------+------+-----+---------+----------------+
+| id    | int          | NO   | PRI | NULL    | auto_increment |
+| name  | varchar(40)  | NO   | UNI | NULL    |                |
+| color | varchar(100) | NO   |     | NULL    |                |
+| icon  | varchar(100) | NO   |     | NULL    |                |
++-------+--------------+------+-----+---------+----------------+
 #### article_tag
-|  Field  |  Type  |  Null  |  Key  | Default | Extra |
-|  :----: | :----: | :----: | :----: | :----: | :----: |
-|  id | int unsigned | no | pri | null | auto_increment |
-|  article_id | int | no | uni | null | -- |
-|  tag_id | int | no | -- | null | -- |
++------------+------+------+-----+---------+----------------+
+| Field      | Type | Null | Key | Default | Extra          |
++------------+------+------+-----+---------+----------------+
+| id         | int  | NO   | PRI | NULL    | auto_increment |
+| article_id | int  | NO   |     | NULL    |                |
+| tag_id     | int  | NO   |     | NULL    |                |
++------------+------+------+-----+---------+----------------+
 #### article_tag 关系表逻辑梳理
 1. 文章表里不需要标签任何信息
 2. 标签表里不需要文章的任何信息
@@ -103,11 +105,13 @@ alter table resumes add column avatar varchar(100);
 ```
 
 #### resume_project
-|  Field  |  Type  |  Null  |  Key  | Default | Extra |
-|  :----: | :----: | :----: | :----: | :----: | :----: |
-|  id | int unsigned | no | pri | null | auto_increment |
-|  resume_id | int | no | -- | null | -- |
-|  project_id | int | no | -- | null | -- |
++------------+--------------+------+-----+---------+----------------+
+| Field      | Type         | Null | Key | Default | Extra          |
++------------+--------------+------+-----+---------+----------------+
+| id         | int unsigned | NO   | PRI | NULL    | auto_increment |
+| resume_id  | int          | NO   |     | NULL    |                |
+| project_id | int          | NO   |     | NULL    |                |
++------------+--------------+------+-----+---------+----------------+
 
 ```
 create table if not exists `resume_project` (`id` int unsigned auto_increment, `resume_id` int not null, `project_id` int not null, primary key(`id`))engine=InnoDB Default charset=utf8;
@@ -152,15 +156,33 @@ create table if not exists `projects` (`id` int unsigned auto_increment, `name` 
 
 ```
 #### company_project
-|  Field  |  Type  |  Null  |  Key  | Default | Extra |
-|  :----: | :----: | :----: | :----: | :----: | :----: |
-|  id | int unsigned | no | pri | null | auto_increment |
-|  company_id | int | no | -- | null | -- |
-|  project_id | int | no | -- | null | -- |
++------------+--------------+------+-----+---------+----------------+
+| Field      | Type         | Null | Key | Default | Extra          |
++------------+--------------+------+-----+---------+----------------+
+| id         | int unsigned | NO   | PRI | NULL    | auto_increment |
+| company_id | int          | NO   |     | NULL    |                |
+| project_id | int          | NO   |     | NULL    |                |
++------------+--------------+------+-----+---------+----------------+
 
 ```
 create table if not exists `company_project` (`id` int unsigned auto_increment, `company_id` int not null, `project_id` int not null, primary key(`id`))engine=InnoDB Default charset=utf8;
 ```
+#### emails
++----------+--------------+------+-----+---------+----------------+
+| Field    | Type         | Null | Key | Default | Extra          |
++----------+--------------+------+-----+---------+----------------+
+| id       | int unsigned | NO   | PRI | NULL    | auto_increment |
+| email    | varchar(100) | NO   | UNI | NULL    |                |
+| nickname | varchar(100) | NO   | UNI | NULL    |                |
+| avatar   | longtext     | NO   |     | NULL    |                |
+| weburl   | longtext     | YES  |     | NULL    |                |
++----------+--------------+------+-----+---------+----------------+
+```
+create table if not exists `emails` (`id` int unsigned auto_increment, `email` varchar(100) not null unique, `nickname` varchar(100) not null unique, `avatar` longtext not null, `weburl` longtext, primary key(`id`))engine=InnoDB Default charset=utf8;
+
+alter table emails modify email varchar(100) not NULL unique;
+```
+
 ### 登录，第三方登录 获取用户信息
 第三方登录时 获取信息存起来，就不用管第三方登录的时效了，blog自己的登录逻辑，时效。
 暂时不做第三方登录...。邮箱，昵称，网站（选填） 登录（第一次注册，登录），后面只要邮箱就行。
@@ -179,10 +201,23 @@ id, comment_id, reply_id, reply_type, content, from_uid, to_uid
 // reply_id：表示回复目标的id（回复的是哪一条 评论或回复），如果reply_type是comment，那reply_id＝commit_id，如果reply_type是reply，这表示这条回复的父回复。
 // to_uid: 回复的谁（用户）
 // from_uid: 页面提交发布的用户
-用户信息表：
-id, nickname, email, avatar, weburl
+用户信息表 email：(命名避免与管理系统的user冲突)
+id, email, nickname, avatar, weburl
 
 // 作者回复时 发邮件。
+
+评论前需要先登录，那就添加简单的登录功能，不要token
+1.页面登录接口 clientLogin。必填情况：1.初次登录：email，nickname。 2.登录过 email。（选填weburl）
+2.接口逻辑：
+  1.只接收到邮箱时：先查询 email 表，如果没有此邮箱, 响应提示输入 nickname，如果查到邮箱，响应登录成功。
+  2.接收到邮箱和nickname时，先查email, 如果没有就添加，如果有就比对nickname,如果nickname不一致就响应不一致，
+    如果一致就登录成功
+
+3.第三方登录准备工作：
+  开发者模式 参考：https://www.ly522.com/3685.html
+  逻辑：
+  1.拉取到email,nickname,avatar等信息，查询email表，如果存在就更新信息，不存在就新增。然后响应成功。
+  2.如果没有拉到邮箱，直接响应失败。
 
 ### mysql & database helper
 cmd：
@@ -208,9 +243,9 @@ CREATE TABLE article_tag(id INT NOT NULL AUTO_INCREMENT,  article_id INT NOT NUL
 //修改列属性
 ALTER TABLE table_name MODIFY column_name datatype;  
 
-ALTER TABLE articles CHANGE COLUMN id INT UNSIGNED AUTO_INCREMENT;
+ALTER TABLE articles modify id INT UNSIGNED AUTO_INCREMENT;
 
-alter table tags change column name varchar(40) not NULL unique;
+alter table tags modify name varchar(40) not NULL unique;
 
 // 新增列属性
 ALTER TABLE 表名 ADD 新字段名 数据类型 [约束条件] FIRST;

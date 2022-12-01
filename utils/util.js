@@ -11,7 +11,14 @@ const isFalse = (val) => {
   return val === '' || val === null || typeof val === 'undefined' || val === 'undefined'
 }
 
+const getRandomAvatar = () => {
+  // 0 - 20 的随机数
+  const num =  Math.floor(Math.random() * 20)
+  // 通过 /blogSystemFile 代理
+  return `/blogSystemFile/imgs/avatar/${num}.jpg`
+}
 module.exports = {
   isSimpleObjValEquel,
-  isFalse
+  isFalse,
+  getRandomAvatar
 }
