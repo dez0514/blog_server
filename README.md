@@ -182,7 +182,38 @@ create table if not exists `emails` (`id` int unsigned auto_increment, `email` v
 
 alter table emails modify email varchar(100) not NULL unique;
 ```
-
+#### comments
++-------------+--------------+------+-----+-------------------+-------------------+
+| Field       | Type         | Null | Key | Default           | Extra             |
++-------------+--------------+------+-----+-------------------+-------------------+
+| id          | int unsigned | NO   | PRI | NULL              | auto_increment    |
+| topic_id    | int          | YES  |     | NULL              |                   |
+| topic_type  | varchar(30)  | NO   |     | NULL              |                   |
+| from_uid    | varchar(100) | NO   |     | NULL              |                   |
+| content     | longtext     | NO   |     | NULL              |                   |
+| create_time | datetime     | YES  |     | CURRENT_TIMESTAMP | DEFAULT_GENERATED |
+| update_time | datetime     | YES  |     | CURRENT_TIMESTAMP | DEFAULT_GENERATED |
++-------------+--------------+------+-----+-------------------+-------------------+
+```
+create table if not exists `comments` (`id` int unsigned auto_increment, `topic_id` int, `topic_type` varchar(30) not null, `from_uid` varchar(100) not null, `content` longtext not null, create_time datetime default current_timestamp, update_time datetime default current_timestamp, primary key(`id`))engine=InnoDB Default charset=utf8;
+```
+#### replys
++-------------+--------------+------+-----+-------------------+-------------------+
+| Field       | Type         | Null | Key | Default           | Extra             |
++-------------+--------------+------+-----+-------------------+-------------------+
+| id          | int unsigned | NO   | PRI | NULL              | auto_increment    |
+| comment_id  | int          | NO   |     | NULL              |                   |
+| reply_id    | int          | NO   |     | NULL              |                   |
+| reply_type  | varchar(30)  | NO   |     | NULL              |                   |
+| from_uid    | varchar(100) | NO   |     | NULL              |                   |
+| to_uid      | varchar(100) | NO   |     | NULL              |                   |
+| content     | longtext     | NO   |     | NULL              |                   |
+| create_time | datetime     | YES  |     | CURRENT_TIMESTAMP | DEFAULT_GENERATED |
+| update_time | datetime     | YES  |     | CURRENT_TIMESTAMP | DEFAULT_GENERATED |
++-------------+--------------+------+-----+-------------------+-------------------+
+```
+create table if not exists `replys` (`id` int unsigned auto_increment, `comment_id` int not null, `reply_id` int not null,`reply_type` varchar(30) not null, `from_uid` varchar(100) not null, `to_uid` varchar(100) not null, `content` longtext not null, create_time datetime default current_timestamp, update_time datetime default current_timestamp, primary key(`id`))engine=InnoDB Default charset=utf8;
+```
 ### 登录，第三方登录 获取用户信息
 第三方登录时 获取信息存起来，就不用管第三方登录的时效了，blog自己的登录逻辑，时效。
 暂时不做第三方登录...。邮箱，昵称，网站（选填） 登录（第一次注册，登录），后面只要邮箱就行。
@@ -190,21 +221,21 @@ alter table emails modify email varchar(100) not NULL unique;
 // 参考： https://www.cnblogs.com/wz-ii/p/13131501.html
 树形模式：至少需要两个表。
 还需要存用户信息：昵称，邮箱，头像（随机一张本地图片）。
-评论表：
+评论表 comments：
 id, topic_id, topic_type, content, from_uid
 // topic_id 对应文章id, 留言板为空
 // topic_type 区分：文章评论 和 留言板  'messageboard' | 'articleComment'
-回复表：
+回复表 replys：
 id, comment_id, reply_id, reply_type, content, from_uid, to_uid
-// comment_id: 评论id, 回复的哪条评论。
+// comment_id: 评论id, 哪条评论下的回复 or 哪条评论下的 回复的回复。
 // reply_type：表示回复的类型，因为回复可以是针对评论的回复(comment)，也可以是针对回复的回复(reply)，区分两种情景。
 // reply_id：表示回复目标的id（回复的是哪一条 评论或回复），如果reply_type是comment，那reply_id＝commit_id，如果reply_type是reply，这表示这条回复的父回复。
 // to_uid: 回复的谁（用户）
 // from_uid: 页面提交发布的用户
 用户信息表 email：(命名避免与管理系统的user冲突)
 id, email, nickname, avatar, weburl
-
 // 作者回复时 发邮件。
+from_uid, to_uid 均改为直接提交邮箱。查询时再查出emails表中的信息
 
 评论前需要先登录，那就添加简单的登录功能，不要token
 1.页面登录接口 clientLogin。必填情况：1.初次登录：email，nickname。 2.登录过 email。（选填weburl）

@@ -6,6 +6,22 @@ const json = require('../utils/response')
 const tokenjs = require('../utils/token')
 const axios = require('axios')
 const utils = require('../utils/util')
+const cookieOptions = {
+  domain: 'localhost',
+  path: '/',
+  httpOnly: false,
+  secure: false,
+  // maxAge: 200000,
+  expires: new Date(Date.now() + 2*60*60*1000) // 2hours
+}
+// domain: 域名 
+// Path： 表示 cookie 影响到的路，如 path=/。如果路径不能匹配时，浏览器则不发送这个 Cookie
+// Expires： 过期时间（秒），在设置的某个时间点后该 Cookie 就会失效，如 expires=Wednesday, 9-Nov-99 23:12:40 GMT  
+// maxAge： 最大失效时间（毫秒），设置在多少后失效
+// secure：当 secure 值为 true 时，cookie 在 HTTP 中是无效，在 HTTPS 中才有效    
+// httpOnly：是微软对 COOKIE 做的扩展。
+// 如果在 COOKIE 中设置了“httpOnly”属性，则通过程序（JS 脚本、applet 等）将无法读取到COOKIE 信息，防止 XSS 攻击产生
+// singed：表示是否签名cookie, 设为true 会对这个 cookie 签名，这样就需要用 res.signedCookies 而不是 res.cookies 访问它。被篡改的签名 cookie 会被服务器拒绝，并且 cookie 值会重置为它的原始值   
 
 // 注册
 router.post('/register', async function (req, res) {
@@ -166,6 +182,7 @@ router.post('/clientLogin', async function (req, res) {
         avatar: randomAvatar,
         weburl
       }
+      res.cookie('email', email, cookieOptions)
       json(res, 0, data, '登录成功')
     } else { // 查到此用户，如果输了nickname 且与查到的不一致就提示
       if(nickname && result && result[0] && result[0].nickname && result[0].nickname !== nickname) { // 提示输入nickname
@@ -186,6 +203,7 @@ router.post('/clientLogin', async function (req, res) {
           avatar: result[0] && result[0].avatar,
           weburl: weburl // 更新后的
         }
+        res.cookie('email', email, cookieOptions)
         json(res, 0, info , '登录成功')
         return
       }
@@ -196,6 +214,7 @@ router.post('/clientLogin', async function (req, res) {
         weburl: (result[0] && result[0].weburl) || ''
       }
       // 没输入nickname, weburl 就直接登录成功
+      res.cookie('email', email, cookieOptions)
       json(res, 0, data, '登录成功')
     }
   } catch (err) {
@@ -222,7 +241,7 @@ router.get('/getClientInfo', async function (req, res) {
         avatar: result[0] && result[0].avatar,
         weburl: (result[0] && result[0].weburl) || ''
       }
-      json(res, 0, data, '该邮箱未注册')
+      json(res, 0, data, '查询成功')
     } else {
       json(res, 1, null, '该邮箱未注册')
     }

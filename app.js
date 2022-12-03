@@ -11,6 +11,7 @@ const projectApi = require('./router/projects')
 const resumeApi = require('./router/resume')
 const fileApi = require('./router/file')
 const userApi = require('./router/user')
+const commentApi = require('./router/comments')
 const tokenjs = require('./utils/token')
 const json = require('./utils/response')
 const query = require('./utils/pool_async')
@@ -142,6 +143,7 @@ app.use('/api/project', projectApi)
 app.use('/api/resume', resumeApi)
 app.use('/api/file', fileApi)
 app.use('/api/user', userApi)
+app.use('/api/comment', commentApi)
 
 const port = process.env.PORT
 app.listen(port, () => {
