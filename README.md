@@ -43,6 +43,9 @@
 | create_time | datetime     | YES  |     | CURRENT_TIMESTAMP | DEFAULT_GENERATED |
 | update_time | datetime     | YES  |     | CURRENT_TIMESTAMP | DEFAULT_GENERATED |
 +-------------+--------------+------+-----+-------------------+-------------------+
+```
+CREATE TABLE articles(id INT NOT NULL AUTO_INCREMENT, title VARCHAR(100) NOT NULL, author VARCHAR(30) NOT NULL, extra_title VARCHAR(100) NOT NULL, banner VARCHAR(100) NOT NULL, content longtext NOT NULL,git VARCHAR(100) NOT NULL ,views INT, likes INT, create_time datetime default current_timestamp, update_time datetime default current_timestamp, PRIMARY KEY ( id ))ENGINE=InnoDB DEFAULT CHARSET=utf8;
+```
 #### tags
 +-------+--------------+------+-----+---------+----------------+
 | Field | Type         | Null | Key | Default | Extra          |
@@ -52,6 +55,9 @@
 | color | varchar(100) | NO   |     | NULL    |                |
 | icon  | varchar(100) | NO   |     | NULL    |                |
 +-------+--------------+------+-----+---------+----------------+
+```
+CREATE TABLE tags(id INT NOT NULL AUTO_INCREMENT, name VARCHAR(40) NOT NULL unique, color VARCHAR(100) NOT NULL, icon VARCHAR(100) NOT NULL, PRIMARY KEY ( id ))ENGINE=InnoDB DEFAULT CHARSET=utf8;
+```
 #### article_tag
 +------------+------+------+-----+---------+----------------+
 | Field      | Type | Null | Key | Default | Extra          |
@@ -60,6 +66,9 @@
 | article_id | int  | NO   |     | NULL    |                |
 | tag_id     | int  | NO   |     | NULL    |                |
 +------------+------+------+-----+---------+----------------+
+```
+CREATE TABLE article_tag(id INT NOT NULL AUTO_INCREMENT,  article_id INT NOT NULL, tag_id INT NOT NULL, PRIMARY KEY ( id ))ENGINE=InnoDB DEFAULT CHARSET=utf8;
+```
 #### article_tag 关系表逻辑梳理
 1. 文章表里不需要标签任何信息
 2. 标签表里不需要文章的任何信息
@@ -96,12 +105,7 @@
 +----------------+--------------+------+-----+-------------------+-------------------+
 
 ```
-create table if not exists `resumes` (`id` int unsigned auto_increment, `name` varchar(100) not null,  `gendar` varchar(10) not null,`school` varchar(100) not null,`profession` varchar(100),`graduationDate` varchar(100),`blog` varchar(100),`github` varchar(100),`phone` varchar(100) not null,`email` varchar(100),`wechat` varchar(100),`qq` varchar(100),`job` varchar(100) not null, `extra` longtext, create_time datetime default current_timestamp, update_time datetime default current_timestamp, primary key(`id`))engine=InnoDB Default charset=utf8;
-
-birthday
-skills
-location
-alter table resumes add column avatar varchar(100);
+create table if not exists `resumes` (`id` int unsigned auto_increment, `name` varchar(100) not null, `birthday` varchar(20),avatar varchar(100), `gendar` varchar(10) not null,`school` varchar(100) not null,`skills` varchar(100),`location` varchar(100),`profession` varchar(100), `graduationDate` varchar(100),`blog` varchar(100),`github` varchar(100),`phone` varchar(100) not null,`email` varchar(100),`wechat` varchar(100),`qq` varchar(100),`job` varchar(100) not null, `extra` longtext, create_time datetime default current_timestamp, update_time datetime default current_timestamp, primary key(`id`))engine=InnoDB Default charset=utf8;
 ```
 
 #### resume_project
@@ -131,9 +135,6 @@ create table if not exists `resume_project` (`id` int unsigned auto_increment, `
 
 ```
 create table if not exists `companys` (`id` int unsigned auto_increment, `name` varchar(100) not null,  `durings` varchar(100) not null,`sort` int default 0, create_time datetime default current_timestamp, update_time datetime default current_timestamp, primary key(`id`))engine=InnoDB Default charset=utf8;
-
-alter table companys modify column sort int not null;
-alter table companys add sort int not null;
 ```
 
 #### projects
@@ -145,8 +146,8 @@ alter table companys add sort int not null;
 | intro       | longtext     | NO   |     | NULL              |                   |
 | technology  | varchar(100) | NO   |     | NULL              |                   |
 | details     | longtext     | NO   |     | NULL              |                   |
-| imgList     | longtext     | YES  |     | NULL              |                   |
 | sort        | int          | YES  |     | 0                 |                   |
+| imgList     | longtext     | YES  |     | NULL              |                   |
 | create_time | datetime     | YES  |     | CURRENT_TIMESTAMP | DEFAULT_GENERATED |
 | update_time | datetime     | YES  |     | CURRENT_TIMESTAMP | DEFAULT_GENERATED |
 +-------------+--------------+------+-----+-------------------+-------------------+
@@ -179,8 +180,6 @@ create table if not exists `company_project` (`id` int unsigned auto_increment, 
 +----------+--------------+------+-----+---------+----------------+
 ```
 create table if not exists `emails` (`id` int unsigned auto_increment, `email` varchar(100) not null unique, `nickname` varchar(100) not null unique, `avatar` longtext not null, `weburl` longtext, primary key(`id`))engine=InnoDB Default charset=utf8;
-
-alter table emails modify email varchar(100) not NULL unique;
 ```
 #### comments
 +-------------+--------------+------+-----+-------------------+-------------------+
@@ -258,24 +257,11 @@ cmd：
 show databases;  // 显示所有数据库
 create database xxx; // 创建数据库
 use xxx; // 进入数据库
-// 创建表 tags
-create table if not exists `tags` (`id` int unsigned auto_increment, `name` varchar(40) not null,  `color` varchar(100) not null, primary key(`id`))engine=InnoDB Default charset=utf8;
 
-vscode 连接 mysql 修改一下密码
+vscode 连接 mysql 修改密码
 ALTER USER 'root'@'localhost' IDENTIFIED WITH mysql_native_password BY ******;
 
-INSERT INTO tags (name, color) VALUES ("vue", "red");
-
-CREATE TABLE tags(id INT NOT NULL AUTO_INCREMENT, name VARCHAR(40) NOT NULL, color VARCHAR(100) NOT NULL, icon VARCHAR(100) NOT NULL, create_time DATE, update_time DATE, PRIMARY KEY ( id ))ENGINE=InnoDB DEFAULT CHARSET=utf8;
-
-CREATE TABLE articles(id INT NOT NULL AUTO_INCREMENT, title VARCHAR(100) NOT NULL, extra_title VARCHAR(100) NOT NULL, banner VARCHAR(100) NOT NULL, tags VARCHAR(100) NOT NULL, content BIGINT NOT NULL,git VARCHAR(100) NOT NULL , views INT, likes INT, create_time DATE, update_time DATE, PRIMARY KEY ( id ))ENGINE=InnoDB DEFAULT CHARSET=utf8;
-
-CREATE TABLE article_tag(id INT NOT NULL AUTO_INCREMENT,  article_id INT NOT NULL, tag_id INT NOT NULL, PRIMARY KEY ( id ))ENGINE=InnoDB DEFAULT CHARSET=utf8;
 //修改列属性
-ALTER TABLE table_name MODIFY column_name datatype;  
-
-ALTER TABLE articles modify id INT UNSIGNED AUTO_INCREMENT;
-
 alter table tags modify name varchar(40) not NULL unique;
 
 // 新增列属性
