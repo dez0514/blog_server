@@ -234,7 +234,7 @@ id, comment_id, reply_id, reply_type, content, from_uid, to_uid
 // from_uid: 页面提交发布的用户
 用户信息表 email：(命名避免与管理系统的user冲突)
 id, email, nickname, avatar, weburl
-// 作者回复时 发邮件。
+// 作者回复时 发邮件。参考：http://t.zoukankan.com/easth-p-node_sendMail.html
 from_uid, to_uid 均改为直接提交邮箱。查询时再查出emails表中的信息
 
 评论前需要先登录，那就添加简单的登录功能，不要token
