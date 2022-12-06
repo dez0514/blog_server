@@ -11,15 +11,18 @@ router.get('/comments_list', async function (req, res, next) {
     let params = req.query;
     let { pageSize, pageNum, topicId } = params;
     let topicType = 'messageboard'
+    let and = ''
     if(topicId) { // 有文章id就是文章评论 否则就是留言板
       topicType = 'articleComment'
+      and = 'AND topic_id=?'
     }
     if (!pageSize) { pageSize = 10 }
     if (!pageNum) { pageNum = 1 }
     let start = (pageNum - 1) * pageSize
     // 将from_uid的 avatar,nickname,weburl 都left join带过来
-    const sql = `SELECT COUNT(*) FROM comments WHERE topic_type=?;SELECT c.*, e.avatar, e.nickname, e.weburl FROM comments c left join emails e on e.email=c.from_uid WHERE topic_type=? ORDER BY IFNULL(update_time, create_time) DESC limit ${start},${pageSize};`
-    const result = await query(sql, [topicType, topicType])
+    const sql = `SELECT COUNT(*) FROM comments WHERE topic_type=? ${and};SELECT c.*, e.avatar, e.nickname, e.weburl FROM comments c left join emails e on e.email=c.from_uid WHERE topic_type=? ${and} ORDER BY IFNULL(update_time, create_time) DESC limit ${start},${pageSize};`
+    const vl = and === '' ? [topicType, topicType] : [topicType, topicId, topicType, topicId]
+    const result = await query(sql, [...vl])
     const total = (result && result[0] && result[0][0] && (result[0][0]['COUNT(*)'] || result[0][0]['COUNT(1)'])) || 0
     const data = (result && result.length > 1) ? result[1] : []
     // todo: 查询评论的回复
