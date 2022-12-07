@@ -20,10 +20,10 @@ router.get('/article_list', async function (req, res, next) {
     let sqlValArr = []
     let keywordWhere = ''
     let orderBY = ''
-    if (!ishot) { // 最新时间降序
-      orderBY = 'IFNULL(update_time, create_time) DESC'
-    } else { // 最热：views降序，如果相等， 就按照时间降序
+    if (ishot === 'true') {  // 最热：views降序，如果相等， 就按照时间降序
       orderBY = 'views DESC, IFNULL(update_time, create_time) DESC'
+    } else { // 最新时间降序
+      orderBY = 'IFNULL(update_time, create_time) DESC'
     }
     if (!tag) { // 没有tag时 考虑筛选keyword
       if (keyword) {
@@ -55,9 +55,16 @@ router.get('/article_list', async function (req, res, next) {
       const ids = data.map(item => item.id)
       const sqlstr = `select t.*, r.article_id from tags t left join article_tag r on t.id = r.tag_id where r.article_id in (${ids});`
       const tagData = await query(sqlstr, [])
+      const cmcSql = `select topic_id, count(*) as commentCount from comments where topic_type='articleComment' and topic_id in (${ids}) group by topic_id;`
+      const commentCountArr = await query(cmcSql, [])
       // 标签与文章列表分类合并
       data.forEach(item => {
         item.tagList = []
+        item.commentCount = 0
+        const fc = commentCountArr.find(f => f.topic_id === item.id)
+        if(fc) {
+          item.commentCount = fc.commentCount || 0
+        }
         tagData.forEach(inner => {
           if (inner && inner.article_id === item.id) {
             item.tagList.push({
@@ -110,9 +117,16 @@ router.get('/article_archive_list', async function (req, res, next) {
       const ids = data.map(item => item.id)
       const sqlstr = `select t.*, r.article_id from tags t left join article_tag r on t.id = r.tag_id where r.article_id in (${ids});`
       const tagData = await query(sqlstr, [])
+      const cmcSql = `select topic_id, count(*) as commentCount from comments where topic_type='articleComment' and topic_id in (${ids}) group by topic_id;`
+      const commentCountArr = await query(cmcSql, [])
       // 标签与文章列表分类合并
       data.forEach(item => {
         item.tagList = []
+        item.commentCount = 0
+        const fc = commentCountArr.find(f => f.topic_id === item.id)
+        if(fc) {
+          item.commentCount = fc.commentCount || 0
+        }
         tagData.forEach(inner => {
           if (inner && inner.article_id === item.id) {
             item.tagList.push({
@@ -175,9 +189,16 @@ router.get('/article_all_list', async function (req, res, next) {
       const ids = result.map(item => item.id)
       const sqlstr = `select t.*, r.article_id from tags t left join article_tag r on t.id = r.tag_id where r.article_id in (${ids});`
       const tagData = await query(sqlstr, [])
+      const cmcSql = `select topic_id, count(*) as commentCount from comments where topic_type='articleComment' and topic_id in (${ids}) group by topic_id;`
+      const commentCountArr = await query(cmcSql, [])
       // 标签与文章列表分类合并
       result.forEach(item => {
         item.tagList = []
+        item.commentCount = 0
+        const fc = commentCountArr.find(f => f.topic_id === item.id)
+        if(fc) {
+          item.commentCount = fc.commentCount || 0
+        }
         tagData.forEach(inner => {
           if (inner && inner.article_id === item.id) {
             item.tagList.push({
