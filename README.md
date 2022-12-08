@@ -261,6 +261,8 @@ use xxx; // 进入数据库
 vscode 连接 mysql 修改密码
 ALTER USER 'root'@'localhost' IDENTIFIED WITH mysql_native_password BY ******;
 
+CREATE TABLE users(id INT NOT NULL AUTO_INCREMENT,  username varchar(100) NOT NULL, password varchar(100) NOT NULL, token varchar(300), PRIMARY KEY ( id ))ENGINE=InnoDB DEFAULT CHARSET=utf8;
+
 //修改列属性
 alter table tags modify name varchar(40) not NULL unique;
 
