@@ -35,11 +35,13 @@
 | username      | varchar(30)  | NO   | UNI | NULL    |                |
 | password      | varchar(100) | NO   |     | NULL    |                |
 | token         | varchar(300) | YES  |     | NULL    |                |
-| refresh_token | varchar(300) | YES  |     | NULL    |                |
+| expires_time  | datetime     | YES  |     | NULL    |                |
 +---------------+--------------+------+-----+---------+----------------+
 ```
-// token， refresh_token 不存了。研究一下redis
 CREATE TABLE users(id INT NOT NULL AUTO_INCREMENT,  username varchar(30) NOT NULL unique, password varchar(100) NOT NULL, token varchar(300), PRIMARY KEY ( id ))ENGINE=InnoDB DEFAULT CHARSET=utf8;
+
+ALTER TABLE 表名 ADD 新字段名 数据类型 [约束条件] FIRST;
+alter table users add expires_time datetime
 ```
 #### articles
 +-------------+--------------+------+-----+-------------------+-------------------+
@@ -382,4 +384,9 @@ token时效30min, refreshToken时效一天
 2.如果token失效,用token查询对应的refreshToken，
   2.1如果refreshToken有效就用它来刷新token，
   2.2如果refreshToken失效 就返回 无效token，前端收到跳转登录
+
+### 最终还是粗暴的设计: 后台系统token登陆，暂时不考虑用redis
+登录时，将token与过期时间存到用户表，
+校验token时，如果当前时间与token存的时间超过2小时，就过期，就清掉token和时间，响应失效，
+如果有效就更新时间和token，并且从header响应出去，前端替换。
 

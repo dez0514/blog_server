@@ -19,6 +19,7 @@ const utils = require('./utils/util')
 const cookieParser = require('cookie-parser')
 const schedule = require('node-schedule');
 const expressip = require('express-ip');
+const dayjs = require('dayjs')
 app.use(expressip().getIpInfoMiddleware); // req.ipInfo
 // const session = require("express-session")
 // const RedisStore = require("connect-redis")(session)
@@ -152,8 +153,12 @@ app.use('/api/comment', commentApi)
 schedule.scheduleJob('0 0 0 * * *', () => {
   console.log('The answer to life, the universe, and everything!');
   // 清除 like_ips, view_ips 表里 过期数据
-  // const sql = 'delete from like_ips where like_time <= (NOW() - INTERVAL 5 MINUTE);'
-  // query(sql, [username])
+  const exp_stamp = new Date().getTime() - 24 * 60 * 60 * 1000
+  const exp_date = dayjs(new Date(exp_stamp)).format('YYYY-MM-DD HH:mm:ss')
+  console.log('exp_date==', exp_date)
+  const sql = 'delete from like_ips where unix_timestamp(like_time) <= unix_timestamp(exp_date)'
+  const sqlv = 'delete from view_ips where unix_timestamp(view_time) <= unix_timestamp(exp_date);'
+  query(`${sql};${sqlv}`, [])
 });
 
 const port = process.env.PORT
