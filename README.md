@@ -27,6 +27,20 @@
 |  /filelist | post | { name: '路径名' } | 文件列表 |
 
 ### 数据表
+#### users
++---------------+--------------+------+-----+---------+----------------+
+| Field         | Type         | Null | Key | Default | Extra          |
++---------------+--------------+------+-----+---------+----------------+
+| id            | int          | NO   | PRI | NULL    | auto_increment |
+| username      | varchar(30)  | NO   | UNI | NULL    |                |
+| password      | varchar(100) | NO   |     | NULL    |                |
+| token         | varchar(300) | YES  |     | NULL    |                |
+| refresh_token | varchar(300) | YES  |     | NULL    |                |
++---------------+--------------+------+-----+---------+----------------+
+```
+// token， refresh_token 不存了。研究一下redis
+CREATE TABLE users(id INT NOT NULL AUTO_INCREMENT,  username varchar(30) NOT NULL unique, password varchar(100) NOT NULL, token varchar(300), PRIMARY KEY ( id ))ENGINE=InnoDB DEFAULT CHARSET=utf8;
+```
 #### articles
 +-------------+--------------+------+-----+-------------------+-------------------+
 | Field       | Type         | Null | Key | Default           | Extra             |
@@ -213,6 +227,48 @@ create table if not exists `comments` (`id` int unsigned auto_increment, `topic_
 ```
 create table if not exists `replys` (`id` int unsigned auto_increment, `comment_id` int not null, `reply_id` int not null,`reply_type` varchar(30) not null, `from_uid` varchar(100) not null, `to_uid` varchar(100) not null, `content` longtext not null, create_time datetime default current_timestamp, update_time datetime default current_timestamp, primary key(`id`))engine=InnoDB Default charset=utf8;
 ```
+#### like_ips 点赞的ip
++------------+--------------+------+-----+---------+----------------+
+| Field      | Type         | Null | Key | Default | Extra          |
++------------+--------------+------+-----+---------+----------------+
+| id         | int          | NO   | PRI | NULL    | auto_increment |
+| article_id | int          | NO   |     | NULL    |                |
+| like_ip    | varchar(130) | NO   |     | NULL    |                |
+| like_time  | datetime     | NO   |     | NULL    |                |
+| like_count | int          | NO   |     | NULL    |                |
++------------+--------------+------+-----+---------+----------------+
+```
+create table if not exists `like_ips`
+(
+  `id` int not null auto_increment,
+  `article_id` int not null,
+  `like_ip` varchar(130) not null,
+  `like_time` datetime not null,
+  `like_count` int not null,
+  primary key(`id`)
+)engine=InnoDB Default charset=utf8;
+```
+#### view_ips 浏览的ip
++------------+--------------+------+-----+---------+----------------+
+| Field      | Type         | Null | Key | Default | Extra          |
++------------+--------------+------+-----+---------+----------------+
+| id         | int          | NO   | PRI | NULL    | auto_increment |
+| article_id | int          | NO   |     | NULL    |                |
+| view_ip    | varchar(130) | NO   |     | NULL    |                |
+| view_time  | datetime     | NO   |     | NULL    |                |
+| view_count | int          | NO   |     | NULL    |                |
++------------+--------------+------+-----+---------+----------------+
+```
+create table if not exists `view_ips`
+(
+  `id` int not null auto_increment,
+  `article_id` int not null,
+  `view_ip` varchar(130) not null,
+  `view_time` datetime not null,
+  `view_count` int not null,
+  primary key(`id`)
+)engine=InnoDB Default charset=utf8;
+```
 ### 登录，第三方登录 获取用户信息
 第三方登录时 获取信息存起来，就不用管第三方登录的时效了，blog自己的登录逻辑，时效。
 暂时不做第三方登录...。邮箱，昵称，网站（选填） 登录（第一次注册，登录），后面只要邮箱就行。
@@ -248,6 +304,23 @@ from_uid, to_uid 均改为直接提交邮箱。查询时再查出emails表中的
   逻辑：
   1.拉取到email,nickname,avatar等信息，查询email表，如果存在就更新信息，不存在就新增。然后响应成功。
   2.如果没有拉到邮箱，直接响应失败。
+### 文章点赞&文章浏览量（不登录也能点，那就与登录无关）
+先盲目实现：
+1. 浏览量 调用详情接口时+1
+2. 点赞，点赞接口时+1
+// 参考：https://segmentfault.com/q/1010000010675069
+问题: 
+1. 如何限制重复点赞？// 刷新页面时获取cookie信息，如果没有信息就能点赞，如果有信息就点过赞了
+2. 文章详情接口如何获取点赞状态？// 不用返回，前端判断cookie信息，自行处理
+3. 如何限制浏览量重复？// 前端获取cookie信息，给个标识给详情接口，表示是否更新views
+4. cookie怎么存呢，与文章id还得绑定？？？cookie有大小限制，如果每篇文章存个key有点不太好。。
+5. redis 还没用过...
+所以换种粗暴的方案：
+1. 设计一个like_ip表，忽略同一局域网出口ip一样的情况，一个ip一篇文章只能点一次。
+2. 查询详情时，获取ip, 查询like_ip中是否存在: 此ip && 此文章id 的数据。返回标识。
+3. 点赞时 同样先查like_ip表, 前端根据标识限制
+4. 基于以上，再加个时间比对，一个ip在规定时间内能对一篇文章一次点赞。
+5. 浏览量也同理，设计一个 view_ip表，每次请求详情时，先查此表，如果与此表存的ip, article_id 以及时间关系成立就更新。
 
 ### mysql & database helper
 cmd：
@@ -261,8 +334,6 @@ use xxx; // 进入数据库
 vscode 连接 mysql 修改密码
 ALTER USER 'root'@'localhost' IDENTIFIED WITH mysql_native_password BY ******;
 
-CREATE TABLE users(id INT NOT NULL AUTO_INCREMENT,  username varchar(100) NOT NULL, password varchar(100) NOT NULL, token varchar(300), PRIMARY KEY ( id ))ENGINE=InnoDB DEFAULT CHARSET=utf8;
-
 //修改列属性
 alter table tags modify name varchar(40) not NULL unique;
 
@@ -270,8 +341,8 @@ alter table tags modify name varchar(40) not NULL unique;
 ALTER TABLE 表名 ADD 新字段名 数据类型 [约束条件] FIRST;
 ALTER TABLE 表名 ADD 新字段名 数据类型 [约束条件] AFTER <已经存在的字段名>;
 
-// 入门级sql要会啊...
-lef join, right join, 临时表
+// 入门级sql
+lef join, right join, 临时表, group by
 查询文章详情，关联表中文章id对应的所有标签id，再用这些标签id查标签表中信息
 select t.* from tags t right join ( select r.tag_id as id  from article_tag r right join articles a on a.id = r.article_id where a.id = ''  ) ra on t.id = ra.id;
 

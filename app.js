@@ -17,6 +17,9 @@ const json = require('./utils/response')
 const query = require('./utils/pool_async')
 const utils = require('./utils/util')
 const cookieParser = require('cookie-parser')
+const schedule = require('node-schedule');
+const expressip = require('express-ip');
+app.use(expressip().getIpInfoMiddleware); // req.ipInfo
 // const session = require("express-session")
 // const RedisStore = require("connect-redis")(session)
 // const redis = require('./redis/redis.js').redis;
@@ -144,6 +147,14 @@ app.use('/api/resume', resumeApi)
 app.use('/api/file', fileApi)
 app.use('/api/user', userApi)
 app.use('/api/comment', commentApi)
+
+// 定时任务 // 每天的凌晨0点0分0秒触发
+schedule.scheduleJob('0 0 0 * * *', () => {
+  console.log('The answer to life, the universe, and everything!');
+  // 清除 like_ips, view_ips 表里 过期数据
+  // const sql = 'delete from like_ips where like_time <= UNIX_TIMESTAMP(DATE_ADD(CURRENT_DATE,INTERVAL -5 MINUTE));'
+  // query(sql, [username])
+});
 
 const port = process.env.PORT
 app.listen(port, () => {

@@ -1,4 +1,11 @@
 module.exports = {
+  cookieOptions: {
+    domain: 'localhost',
+    path: '/',
+    httpOnly: false,
+    secure: false
+    // maxAge: 200000,
+  },
   github: {
     username: '',
     token: '',
