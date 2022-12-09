@@ -226,7 +226,7 @@ router.get('/article_detail', async function (req, res, next) {
     }
     // 查询文章浏览状态
     const ip = req.ipInfo.ip || req.ip
-    const vsql = `select id,view_time,view_count from view_ips where view_ip=? and article_id=?`
+    const vsql = `select id,view_time from view_ips where view_ip=? and article_id=?`
     const viewRes = await query(vsql, [ip, id])
     let isView = false // 是否浏览过, 默认没有
     if(viewRes.length > 0) {
@@ -235,11 +235,10 @@ router.get('/article_detail', async function (req, res, next) {
       isView = (nowtime - lasttime) <= 24 * 60 * 60 * 1000 // 如果过期，可以再计算浏览量
       // 更新view_time
       if(!isView) {
-        const vuSql = `update view_ips set view_time=?,view_count=? where id=?`
+        const vuSql = `update view_ips set view_time=? where id=?`
         const viewid = viewRes[0] && viewRes[0].id
         const newtime = dayjs(new Date()).format('YYYY-MM-DD HH:mm:ss')
-        const count = Number(viewRes[0] && viewRes[0].view_count)
-        const upvRes = await query(vuSql, [newtime, count+1,viewid])
+        const upvRes = await query(vuSql, [newtime,viewid])
         if(upvRes && upvRes.affectedRows && upvRes.affectedRows === 0) {
           json(res, 1, upvRes, '更新浏览量数据失败!')
           return
@@ -248,9 +247,9 @@ router.get('/article_detail', async function (req, res, next) {
     } else {
       isView = false
       // 插入数据 view_ips
-      const inSql = `insert into view_ips(view_ip, article_id, view_time, view_count) values(?,?,?,?);`
+      const inSql = `insert into view_ips(view_ip, article_id, view_time) values(?,?,?);`
       const view_time = dayjs(new Date()).format('YYYY-MM-DD HH:mm:ss')
-      const viewResult = await query(inSql, [ip, id, view_time, 1])
+      const viewResult = await query(inSql, [ip, id, view_time])
       if(viewResult && viewResult.affectedRows && viewResult.affectedRows === 0) {
         json(res, 1, viewResult, '更新浏览量数据失败!')
         return
@@ -283,7 +282,7 @@ router.get('/article_detail', async function (req, res, next) {
       }
     }).filter(item => !util.isFalse(item.tagId))
     // 查询文章点赞状态
-    const ssql = `select id,like_time,like_count from like_ips where like_ip=? and article_id=?`
+    const ssql = `select id,like_time from like_ips where like_ip=? and article_id=?`
     const likeRes = await query(ssql, [ip, id])
     let isLike = false // 是否点赞过, 默认没有
     if(likeRes.length > 0) {
@@ -309,7 +308,7 @@ router.post('/like', async function (req, res, next) {
       return
     }
     // like_ips
-    const ssql = `select id,like_time,like_count from like_ips where like_ip=? and article_id=?`
+    const ssql = `select id,like_time from like_ips where like_ip=? and article_id=?`
     const ip = req.ipInfo.ip || req.ip
     const likeRes = await query(ssql, [ip, id])
     if(likeRes.length > 0) {
@@ -323,17 +322,16 @@ router.post('/like', async function (req, res, next) {
       // 过期了，可以继续点赞
       const likeid = likeRes[0] && likeRes[0].id
       const newtime = dayjs(new Date()).format('YYYY-MM-DD HH:mm:ss')
-      const count = Number(likeRes[0] && likeRes[0].like_count)
-      const usql = `update like_ips set like_time=?,like_count=? where id=?`
-      const upRes = await query(usql, [newtime, count+1,likeid])
+      const usql = `update like_ips set like_time=? where id=?`
+      const upRes = await query(usql, [newtime,likeid])
       if(upRes && upRes.affectedRows && upRes.affectedRows === 0) {
         json(res, 1, upRes, '点赞失败!')
         return
       }
     } else {
-      const inSql = `insert into like_ips(like_ip, article_id, like_time, like_count) values(?,?,?,?);`
+      const inSql = `insert into like_ips(like_ip, article_id, like_time) values(?,?,?);`
       const like_time = dayjs(new Date()).format('YYYY-MM-DD HH:mm:ss')
-      const likeResult = await query(inSql, [ip, id, like_time, 1])
+      const likeResult = await query(inSql, [ip, id, like_time])
       if(likeResult && likeResult.affectedRows && likeResult.affectedRows === 0) {
         json(res, 1, likeResult, '点赞失败!')
         return

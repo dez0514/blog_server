@@ -244,7 +244,6 @@ create table if not exists `like_ips`
   `article_id` int not null,
   `like_ip` varchar(130) not null,
   `like_time` datetime not null,
-  `like_count` int not null,
   primary key(`id`)
 )engine=InnoDB Default charset=utf8;
 ```
@@ -265,7 +264,6 @@ create table if not exists `view_ips`
   `article_id` int not null,
   `view_ip` varchar(130) not null,
   `view_time` datetime not null,
-  `view_count` int not null,
   primary key(`id`)
 )engine=InnoDB Default charset=utf8;
 ```

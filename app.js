@@ -152,7 +152,7 @@ app.use('/api/comment', commentApi)
 schedule.scheduleJob('0 0 0 * * *', () => {
   console.log('The answer to life, the universe, and everything!');
   // 清除 like_ips, view_ips 表里 过期数据
-  // const sql = 'delete from like_ips where like_time <= UNIX_TIMESTAMP(DATE_ADD(CURRENT_DATE,INTERVAL -5 MINUTE));'
+  // const sql = 'delete from like_ips where like_time <= (NOW() - INTERVAL 5 MINUTE);'
   // query(sql, [username])
 });
 
