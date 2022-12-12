@@ -15,16 +15,17 @@ const commentApi = require('./router/comments')
 const tokenjs = require('./utils/token')
 const json = require('./utils/response')
 const query = require('./utils/pool_async')
-const utils = require('./utils/util')
+// const utils = require('./utils/util')
 const cookieParser = require('cookie-parser')
 const schedule = require('node-schedule');
 const expressip = require('express-ip');
 const dayjs = require('dayjs')
+const configOption = require('./config/config')
 app.use(expressip().getIpInfoMiddleware); // req.ipInfo
 // const session = require("express-session")
 // const RedisStore = require("connect-redis")(session)
 // const redis = require('./redis/redis.js').redis;
-
+const { tokenExpires, dayjsExpiresNum, dayjsExpiresUnit } = configOption.tokenExpOptions
 dotenv.config({
   path: path.join(__dirname, './config/config.env')
 });
@@ -81,62 +82,56 @@ app.use('/api', async(req, res, next) => {
     next()
     return
   }
-  const token = (req.headers && req.headers.token) || ''
-  const decoded = tokenjs.decodeToken(token)
-  const isTokenValid = (decoded && decoded.exp > new Date() / 1000) || false
+  const oldDecrypToken = (req.headers && req.headers.token) || '' // 传过来的是加密的
+  // console.log('old des==', oldDecrypToken)
+  const decoded = tokenjs.decodeToken(oldDecrypToken)
   const username = (decoded && decoded.username) || ''
-  if (!isTokenValid || !username) {
+  // console.log('decoded info==', decoded)
+  if (!username) {
     json(res, 417, null, 'invalid token!')
     return
   }
   // 查询username的token(未加密的)，decode出来的信息 和 接口传入的一致 就通过
-  const sql = 'SELECT token FROM users WHERE username=?;'
+  const sql = 'SELECT token,expires_time FROM users WHERE username=?;'
   const result = await query(sql, [username])
+  // console.log('search result==', result)
   if(!result || result.length === 0 || !result[0].token) {
     json(res, 417, null, 'invalid token!')
     return
   }
-  const dbToken = result[0].token
-  const dbDecode = tokenjs.decodeSimpleToken(dbToken)
-  // console.log('decode===', decoded)
-  // console.log('dbDecode===', dbDecode)
-  if (!utils.isSimpleObjValEquel(decoded, dbDecode)) {
+  const dbExp = result[0].expires_time
+  const isOutExp = !dbExp || (dayjs(dbExp).valueOf() <= (new Date().getTime())) // 过期
+  if(isOutExp) {
     json(res, 417, null, 'invalid token!')
     return
   }
-  res.setHeader('token', token)
-  // if (!isTokenValid) {
-  //   const username = (decoded && decoded.username) || ''
-  //   if (!username) {
-  //     json(res, 417, null, 'invalid token!')
-  //     return
-  //   }
-  //   const sql = 'SELECT refresh_token FROM users WHERE username=?;'
-  //   const result = await query(sql, [username])
-  //   if(!result || result.length === 0 || !result[0].refresh_token) {
-  //     json(res, 417, null, 'invalid token!')
-  //     return
-  //   }
-  //   const refresh_token = result[0].refresh_token
-  //   const decodeRefresh = tokenjs.decodeSimpleToken(refresh_token)
-  //   console.log('decodeRefresh===', decodeRefresh)
-  //   const refreshIsValid = (decodeRefresh && decodeRefresh.exp > new Date() / 1000) || false
-  //   if (!refreshIsValid) {
-  //     json(res, 417, null, 'invalid token!')
-  //     return
-  //   }
-  //   // todo: 如果失效，判断 refresh_token 是否有效，有效就刷新token，否则再报417
-  //   const newToken = tokenjs.getToken({ username }, '120s')
-  //   const updateSql = `UPDATE users SET token=? WHERE username=?;`
-  //   const updateResult = await query(updateSql, [newToken.token, username])
-  //   if (Number(updateResult.affectedRows) !== 1) {
-  //     json(res, 417, null, 'invalid token!')
-  //     return
-  //   }
-  //   res.setHeader('token', newToken.encrypted) // 设置响应头
-  //   next()
-  // }
-  next()
+  // console.log('isOutExp==', isOutExp, dbExp)
+  // 没过期，有接口操作时 更新时间，如果token本身过期了就换token
+  const isTokenExp = (decoded && (decoded.exp * 1000) > (new Date().getTime())) || false
+  const new_expires_time = dayjs().add(dayjsExpiresNum, dayjsExpiresUnit).format('YYYY-MM-DD HH:mm:ss')
+  if(isTokenExp) { // token本身没过期
+    // console.log('isTokenExp==', isTokenExp)
+    const updateSql = `UPDATE users SET expires_time=? WHERE username=?;`
+    const updateResult = await query(updateSql, [new_expires_time, username])
+    // console.log('updateResult result==', updateResult)
+    if(updateResult && updateResult.affectedRows && updateResult.affectedRows === 0) {
+      json(res, 417, null, '网络错误，数据更新失败!')
+      return
+    }
+    next()
+  } else {
+    // console.log('isTokenExp222==', isTokenExp)
+    const newTokenInfo = tokenjs.getToken({ username }, tokenExpires) // 新创建token 存未加密的 ，响应加密的
+    const updateSql = `UPDATE users SET token=?,expires_time=? WHERE username=?;`
+    const updateResult = await query(updateSql, [newTokenInfo.token, new_expires_time, username]) 
+    // console.log('updateResult result222==', updateResult)
+    if(updateResult && updateResult.affectedRows && updateResult.affectedRows === 0) {
+      json(res, 417, null, '网络错误，数据更新失败!')
+      return
+    }
+    res.setHeader('token', newTokenInfo.encrypted)
+    next()
+  }
 })
 
 app.use('/imgs', express.static(path.join(__dirname, 'imgs')))
@@ -151,14 +146,13 @@ app.use('/api/comment', commentApi)
 
 // 定时任务 // 每天的凌晨0点0分0秒触发
 schedule.scheduleJob('0 0 0 * * *', () => {
-  console.log('The answer to life, the universe, and everything!');
+  console.log('===定时清除点赞和浏览过期的数据!===');
   // 清除 like_ips, view_ips 表里 过期数据
   const exp_stamp = new Date().getTime() - 24 * 60 * 60 * 1000
   const exp_date = dayjs(new Date(exp_stamp)).format('YYYY-MM-DD HH:mm:ss')
-  console.log('exp_date==', exp_date)
-  const sql = 'delete from like_ips where unix_timestamp(like_time) <= unix_timestamp(exp_date)'
-  const sqlv = 'delete from view_ips where unix_timestamp(view_time) <= unix_timestamp(exp_date);'
-  query(`${sql};${sqlv}`, [])
+  const sql = `delete from like_ips where like_time <= ?`
+  const sqlv = `delete from view_ips where view_time <= ?;`
+  query(`${sql};${sqlv}`, [exp_date, exp_date])
 });
 
 const port = process.env.PORT

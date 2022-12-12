@@ -1,4 +1,9 @@
 module.exports = {
+  tokenExpOptions: {
+    tokenExpires: '4h', // "2 days", "10h", "7d"， 创建token时用, token自身有效时间
+    dayjsExpiresNum: 2,  // 存表时 计算用。存在表中的有效时间（存表时的当前时间 + dayjsExpiresNum）
+    dayjsExpiresUnit: 'hour', // day, hour, second
+  },
   cookieOptions: {
     domain: 'localhost',
     path: '/',

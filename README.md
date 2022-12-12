@@ -38,7 +38,7 @@
 | expires_time  | datetime     | YES  |     | NULL    |                |
 +---------------+--------------+------+-----+---------+----------------+
 ```
-CREATE TABLE users(id INT NOT NULL AUTO_INCREMENT,  username varchar(30) NOT NULL unique, password varchar(100) NOT NULL, token varchar(300), PRIMARY KEY ( id ))ENGINE=InnoDB DEFAULT CHARSET=utf8;
+CREATE TABLE users(id INT NOT NULL AUTO_INCREMENT,  username varchar(30) NOT NULL unique, password varchar(100) NOT NULL, token varchar(300), expires_time datetime, PRIMARY KEY ( id ))ENGINE=InnoDB DEFAULT CHARSET=utf8;
 
 ALTER TABLE 表名 ADD 新字段名 数据类型 [约束条件] FIRST;
 alter table users add expires_time datetime

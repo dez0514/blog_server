@@ -7,10 +7,12 @@ const tokenjs = require('../utils/token')
 const axios = require('axios')
 const utils = require('../utils/util')
 const configOption = require('../config/config')
+const dayjs = require('dayjs')
 const cookieOptions = {
   ...configOption.cookieOptions,
   expires: new Date(Date.now() + 2 * 60 * 60 * 1000) // 2hours
 }
+const { tokenExpires, dayjsExpiresNum, dayjsExpiresUnit } = configOption.tokenExpOptions
 // domain: 域名 
 // Path： 表示 cookie 影响到的路，如 path=/。如果路径不能匹配时，浏览器则不发送这个 Cookie
 // Expires： 过期时间（秒），在设置的某个时间点后该 Cookie 就会失效，如 expires=Wednesday, 9-Nov-99 23:12:40 GMT  
@@ -67,26 +69,11 @@ router.post('/login', async function (req, res) {
       json(res, 1, null, '用户名或密码不正确!')
       return
     }
-    const {
-      token,
-      encrypted
-    } = tokenjs.getToken({
-      username
-    }, '1day') // 120s 存未加密的 ，响应加密的
-    const updateSql = `UPDATE users SET token=? WHERE username=?;`
-    const updateResult = await query(updateSql, [token, username])
-
-    // const user = {
-    //   username: username,
-    //   token: token // 未加密
-    // }
-    // req.session.user = user
-
-    // const refreshTokenData = tokenjs.getToken({ username }, '600s')
-    // const refresh_token = refreshTokenData.token
-    // const updateSql = `UPDATE users SET token=?,refresh_token=? WHERE username=?;`
-    // const updateResult = await query(updateSql, [token, refresh_token, username])
-    // console.log('updateResult===', updateResult)
+    // tokenExpires, dayjsExpiresNum, dayjsExpiresUnit
+    const { token, encrypted } = tokenjs.getToken({ username }, tokenExpires) // 存未加密的 ，响应加密的
+    const expires_time = dayjs().add(dayjsExpiresNum, dayjsExpiresUnit).format('YYYY-MM-DD HH:mm:ss')
+    const updateSql = `UPDATE users SET token=?,expires_time=? WHERE username=?;`
+    const updateResult = await query(updateSql, [token, expires_time, username])
     if (updateResult && updateResult.affectedRows && updateResult.affectedRows > 0) {
       json(res, 0, {
         token: encrypted,
@@ -106,7 +93,12 @@ router.post('/login', async function (req, res) {
 router.get('/userinfo', function (req, res) {
   const token = req.headers.token || ''
   const data = tokenjs.decodeToken(token)
-  const username = data.username
+  const username = data.username || ''
+  // 若有额外信息再去查users表
+  if(!username) {
+    json(res, 1, null, 'token无效，查询失败!')
+    return
+  }
   json(res, 0, {
     username
   }, '查询成功!')
