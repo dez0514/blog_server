@@ -110,7 +110,7 @@ router.post('/logout', async function (req, res) {
     const token = req.headers.token || ''
     const data = tokenjs.decodeToken(token)
     const username = data.username
-    const sql = `UPDATE users SET token=NULL WHERE username=?`
+    const sql = `UPDATE users SET token=NULL,expires_time=NULL WHERE username=?`
     const result = await query(sql, [username])
     console.log(result)
     if (result && result.affectedRows && result.affectedRows > 0) {
