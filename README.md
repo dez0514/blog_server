@@ -405,3 +405,10 @@ https://www.jianshu.com/p/befdb525978d
 https://www.cnblogs.com/ygunoil/p/15048238.html
 https://zhuanlan.zhihu.com/p/405936576
 这个靠谱：https://blog.csdn.net/dongkeai/article/details/127462318
+
+mac redis:
+1.brew services stop redis 
+2.cd usr/local/bin
+3.redis-cli -h 127.0.0.1 -p 6379
+备注：修改密码 config set requirepass 'xxx'
+检查密码： auth xxx
