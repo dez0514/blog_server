@@ -21,10 +21,8 @@ const schedule = require('node-schedule');
 const expressip = require('express-ip');
 const dayjs = require('dayjs')
 const configOption = require('./config/config')
+const redisCache = require('./redis/cache')
 app.use(expressip().getIpInfoMiddleware); // req.ipInfo
-// const session = require("express-session")
-// const RedisStore = require("connect-redis")(session)
-// const redis = require('./redis/redis.js').redis;
 const { tokenExpires, dayjsExpiresNum, dayjsExpiresUnit } = configOption.tokenExpOptions
 dotenv.config({
   path: path.join(__dirname, './config/config.env')
@@ -45,19 +43,7 @@ app.all('*', function(req, res, next){
     next()
   }
 })
-// const salt = 'sessiontest'
-// app.use(session({
-//   store: new RedisStore({
-//     client: redis,
-//     prefix: 'zwd'
-//   }),
-//   cookie: { maxAge: 1 * 60 * 60 * 1000 }, //默认1小时
-//   secret: salt,
-//   resave: true,
-//   saveUninitialized: true
-// }));
 app.use(cookieParser())
-// app.use(cookieParser(salt));
 app.use(express.json())
 app.use(express.urlencoded({extended: false}))
 app.use(morgan("dev"))
@@ -69,9 +55,10 @@ app.get('/', (req, res) => {
     message: 'Not Found'
   })
 })
-
 //  拦截 /api 下的所有请求 验证 token
 app.use('/api', async(req, res, next) => {
+  const test = await redisCache.get('username')
+  console.log('redis===', test)
   const project = req.headers && req.headers.projectid || ''
   if (project === 'client') { // 前台项目接口 不需要token
     next()

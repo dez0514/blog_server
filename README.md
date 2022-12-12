@@ -359,7 +359,7 @@ select ar.* , GROUP_CONCAT(CONCAT_WS(', ', t.name, t.icon) SEPARATOR ';') as 'ta
 利用id集合查所有id数据 的sql
 select t.*, r.article_id from tags t left join article_tag r on t.id =  r.tag_id  where r.article_id in (${ids});
 
-#### refreshToken机制
+#### refreshToken机制 （太麻烦了，不搞）
 为什么需要刷新令牌
 如果token超时时间很长，比如14天，由于第三方软件获取受保护资源都要带着token，这样token的攻击面就比较大。
 如果token超时时间很短，比如1个小时，那其超时之后就需要用户再次授权，这样的频繁授权导致用户体验不好。
@@ -387,6 +387,21 @@ token时效30min, refreshToken时效一天
 
 ### 最终还是粗暴的设计: 后台系统token登陆，暂时不考虑用redis
 登录时，将token与过期时间存到用户表，
-校验token时，如果当前时间与token存的时间超过2小时，就过期，就清掉token和时间，响应失效，
+校验token时，如果当前时间与token存的时间超过2小时，就过期，就清掉token和时间，重新登录。
 如果有效就更新时间和token，并且从header响应出去，前端替换。
 
+### 看看redis算了。。
+登录时，将token与过期时间存到redis，
+校验token时，如果当前时间与token存的时间超过2小时，就过期，就清掉token和时间，重新登录。
+如果有效就更新时间和token，并且从header响应出去，前端替换。
+参考文章：
+https://www.runoob.com/redis/redis-install.html
+https://www.cnblogs.com/huilinmumu/p/15979459.html
+https://zhuanlan.zhihu.com/p/405936576
+https://www.51cto.com/article/477692.html
+使用： 
+https://www.jianshu.com/p/8bb24a9a1649
+https://www.jianshu.com/p/befdb525978d
+https://www.cnblogs.com/ygunoil/p/15048238.html
+https://zhuanlan.zhihu.com/p/405936576
+这个靠谱：https://blog.csdn.net/dongkeai/article/details/127462318
