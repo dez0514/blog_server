@@ -8,6 +8,7 @@ const axios = require('axios')
 const utils = require('../utils/util')
 const configOption = require('../config/config')
 const dayjs = require('dayjs')
+const redisCache = require('./redis/cache')
 const cookieOptions = {
   ...configOption.cookieOptions,
   expires: new Date(Date.now() + 2 * 60 * 60 * 1000) // 2hours
@@ -72,18 +73,22 @@ router.post('/login', async function (req, res) {
     // tokenExpires, dayjsExpiresNum, dayjsExpiresUnit
     const { token, encrypted } = tokenjs.getToken({ username }, tokenExpires) // 存未加密的 ，响应加密的
     const expires_time = dayjs().add(dayjsExpiresNum, dayjsExpiresUnit).format('YYYY-MM-DD HH:mm:ss')
-    const updateSql = `UPDATE users SET token=?,expires_time=? WHERE username=?;`
-    const updateResult = await query(updateSql, [token, expires_time, username])
-    if (updateResult && updateResult.affectedRows && updateResult.affectedRows > 0) {
-      json(res, 0, {
-        token: encrypted,
-        userinfo: {
-          username
-        }
-      }, '登录成功!')
-    } else {
-      json(res, 1, updateResult, '登录失败!')
-    }
+    // 存到redis: username, token, expires_time
+    const obj = { token, expires_time }
+    await redisCache.set(username, JSON.stringify(obj))
+    json(res, 0, { token: encrypted, userinfo: { username } }, '登录成功!')
+    // const updateSql = `UPDATE users SET token=?,expires_time=? WHERE username=?;`
+    // const updateResult = await query(updateSql, [token, expires_time, username])
+    // if (updateResult && updateResult.affectedRows && updateResult.affectedRows > 0) {
+    //   json(res, 0, {
+    //     token: encrypted,
+    //     userinfo: {
+    //       username
+    //     }
+    //   }, '登录成功!')
+    // } else {
+    //   json(res, 1, updateResult, '登录失败!')
+    // }
   } catch (err) {
     console.log(err)
     json(res, 1, err, '登录失败!')
@@ -110,14 +115,17 @@ router.post('/logout', async function (req, res) {
     const token = req.headers.token || ''
     const data = tokenjs.decodeToken(token)
     const username = data.username
-    const sql = `UPDATE users SET token=NULL,expires_time=NULL WHERE username=?`
-    const result = await query(sql, [username])
-    console.log(result)
-    if (result && result.affectedRows && result.affectedRows > 0) {
-      json(res, 0, null, '退出成功!')
-    } else {
-      json(res, 1, result, '退出失败!')
-    }
+    // 清除redis上的信息
+    await redisCache.del(username)
+    json(res, 0, null, '退出成功!')
+    // const sql = `UPDATE users SET token=NULL,expires_time=NULL WHERE username=?`
+    // const result = await query(sql, [username])
+    // console.log(result)
+    // if (result && result.affectedRows && result.affectedRows > 0) {
+    //   json(res, 0, null, '退出成功!')
+    // } else {
+    //   json(res, 1, result, '退出失败!')
+    // }
   } catch (err) {
     json(res, 1, err, '退出失败!')
   }
