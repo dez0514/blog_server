@@ -1,13 +1,14 @@
-const NodeRSA = require('node-rsa');
-const secretkey = new NodeRSA({ b: 512 }).exportKey('public');
+// const NodeRSA = require('node-rsa');
+// const secretkey = new NodeRSA({ b: 512 }).exportKey('public');
 // 注意：每次保存代码时，此盐值就不一样了，所以登录的token加解密都不一样了，会跳出登录
 module.exports = {
-  secret: secretkey,
+  secret: 'zwd is the author', // secretkey,
   passwordSecret: 'password', // 密码加密的盐值
   tokenExpOptions: {
     tokenExpires: '2h', // "2 days", "10h", "7d"， 创建token时用, token自身有效时间
     redisTtl: 2 * 60 * 60 // 秒数 ，redis key 的过期时间2h
   },
+  viewsExpires: 24 * 60 * 60, // 浏览记录失效，过期再浏览重新加1
   cookieOptions: {
     domain: 'localhost',
     path: '/',

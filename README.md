@@ -235,7 +235,6 @@ create table if not exists `replys` (`id` int unsigned auto_increment, `comment_
 | article_id | int          | NO   |     | NULL    |                |
 | like_ip    | varchar(130) | NO   |     | NULL    |                |
 | like_time  | datetime     | NO   |     | NULL    |                |
-| like_count | int          | NO   |     | NULL    |                |
 +------------+--------------+------+-----+---------+----------------+
 ```
 create table if not exists `like_ips`
@@ -248,24 +247,8 @@ create table if not exists `like_ips`
 )engine=InnoDB Default charset=utf8;
 ```
 #### view_ips 浏览的ip
-+------------+--------------+------+-----+---------+----------------+
-| Field      | Type         | Null | Key | Default | Extra          |
-+------------+--------------+------+-----+---------+----------------+
-| id         | int          | NO   | PRI | NULL    | auto_increment |
-| article_id | int          | NO   |     | NULL    |                |
-| view_ip    | varchar(130) | NO   |     | NULL    |                |
-| view_time  | datetime     | NO   |     | NULL    |                |
-| view_count | int          | NO   |     | NULL    |                |
-+------------+--------------+------+-----+---------+----------------+
 ```
-create table if not exists `view_ips`
-(
-  `id` int not null auto_increment,
-  `article_id` int not null,
-  `view_ip` varchar(130) not null,
-  `view_time` datetime not null,
-  primary key(`id`)
-)engine=InnoDB Default charset=utf8;
+alter drop view_ips; // 利用redis，此表无用了
 ```
 ### 登录，第三方登录 获取用户信息
 第三方登录时 获取信息存起来，就不用管第三方登录的时效了，blog自己的登录逻辑，时效。
@@ -274,12 +257,10 @@ create table if not exists `view_ips`
 // 参考： https://www.cnblogs.com/wz-ii/p/13131501.html
 树形模式：至少需要两个表。
 还需要存用户信息：昵称，邮箱，头像（随机一张本地图片）。
-评论表 comments：
-id, topic_id, topic_type, content, from_uid
+评论表 comments：id, topic_id, topic_type, content, from_uid
 // topic_id 对应文章id, 留言板为空
 // topic_type 区分：文章评论 和 留言板  'messageboard' | 'articleComment'
-回复表 replys：
-id, comment_id, reply_id, reply_type, content, from_uid, to_uid
+回复表 replys： id, comment_id, reply_id, reply_type, content, from_uid, to_uid
 // comment_id: 评论id, 哪条评论下的回复 or 哪条评论下的 回复的回复。
 // reply_type：表示回复的类型，因为回复可以是针对评论的回复(comment)，也可以是针对回复的回复(reply)，区分两种情景。
 // reply_id：表示回复目标的id（回复的是哪一条 评论或回复），如果reply_type是comment，那reply_id＝commit_id，如果reply_type是reply，这表示这条回复的父回复。
@@ -287,16 +268,16 @@ id, comment_id, reply_id, reply_type, content, from_uid, to_uid
 // from_uid: 页面提交发布的用户
 用户信息表 email：(命名避免与管理系统的user冲突)
 id, email, nickname, avatar, weburl
-// 作者回复时 发邮件。参考：http://t.zoukankan.com/easth-p-node_sendMail.html
+// 作者回复时 发邮件。
 from_uid, to_uid 均改为直接提交邮箱。查询时再查出emails表中的信息
 
-评论前需要先登录，那就添加简单的登录功能，不要token
+评论前需要先登录，那前台页面就添加简单的登录功能，不要token
 1.页面登录接口 clientLogin。必填情况：1.初次登录：email，nickname。 2.登录过 email。（选填weburl）
 2.接口逻辑：
   1.只接收到邮箱时：先查询 email 表，如果没有此邮箱, 响应提示输入 nickname，如果查到邮箱，响应登录成功。
-  2.接收到邮箱和nickname时，先查email, 如果没有就添加，如果有就比对nickname,如果nickname不一致就响应不一致，
-    如果一致就登录成功
-
+  2.接收到邮箱和nickname时，先查email, 如果没有就添加，如果有就比对nickname,如果nickname不一致就响应不一致，如果一致就登录成功。
+  
+todo:
 3.第三方登录准备工作：
   开发者模式 参考：https://www.ly522.com/3685.html
   逻辑：
@@ -307,18 +288,16 @@ from_uid, to_uid 均改为直接提交邮箱。查询时再查出emails表中的
 1. 浏览量 调用详情接口时+1
 2. 点赞，点赞接口时+1
 // 参考：https://segmentfault.com/q/1010000010675069
-问题: 
-1. 如何限制重复点赞？// 刷新页面时获取cookie信息，如果没有信息就能点赞，如果有信息就点过赞了
-2. 文章详情接口如何获取点赞状态？// 不用返回，前端判断cookie信息，自行处理
-3. 如何限制浏览量重复？// 前端获取cookie信息，给个标识给详情接口，表示是否更新views
-4. cookie怎么存呢，与文章id还得绑定？？？cookie有大小限制，如果每篇文章存个key有点不太好。。
-5. redis 还没用过...
-所以换种粗暴的方案：
+点赞利用mysql表,一个ip一篇文章只能点一次。
 1. 设计一个like_ip表，忽略同一局域网出口ip一样的情况，一个ip一篇文章只能点一次。
 2. 查询详情时，获取ip, 查询like_ip中是否存在: 此ip && 此文章id 的数据。返回标识。
 3. 点赞时 同样先查like_ip表, 前端根据标识限制
-4. 基于以上，再加个时间比对，一个ip在规定时间内能对一篇文章一次点赞。
-5. 浏览量也同理，设计一个 view_ip表，每次请求详情时，先查此表，如果与此表存的ip, article_id 以及时间关系成立就更新。
+
+浏览量利用redis。一个ip一篇文章一天访问只计数一次。
+redis.set(`view_${ip}_${articleID}`, ip)
+redis.expire(`view_${ip}_${articleID}`, exp)
+如果redis能查到就表示访问过，如果查不到(此条redis失效，再次访问)就浏览量加1
+
 
 ### mysql & database helper
 cmd：
@@ -347,46 +326,22 @@ select t.* from tags t right join ( select r.tag_id as id  from article_tag r ri
 查询文章列表，每条文章数据里需要 带上它的标签信息。
 思路1：长sql, 和上面类似，但是GROUP_CONCAT只能将所有标签信息的给一个字段，前端获取到进行切割
 // limit做分页，其他筛选条件可以继续拼
-select ar.title as '文章名', GROUP_CONCAT(t.name separator ',') as '标签' from ( select a.*, r.tag_id as tag_id from articles a left join  article_tag r on a.id = r.article_id where 1=1 ) ar left join tags t on ar.tag_id = t.id group by ar.id order by ar.id desc limit 4, 2 
-
-select ar.* , GROUP_CONCAT(t.name separator ',') from ( select a.*, r.tag_id as tag_id from articles a left join  article_tag r on a.id = r.article_id where 1=1 ) ar left join tags t on ar.tag_id = t.id group by ar.id order by ar.id desc  limit 4, 2 ;
-
-select ar.* , GROUP_CONCAT(CONCAT_WS(', ', t.name, t.icon) SEPARATOR ';') as 'tagArrs' from ( select a.*, r.tag_id as tag_id from articles a left join  article_tag r on a.id = r.article_id where 1=1 ) ar left join tags t on ar.tag_id = t.id group by ar.id order by ar.id desc limit 4, 2;
 
 思路2：先查文章列表，再根据文章id集合查所有文章id对应的标签总列表，然后再根据文章id分类合并处理
 利用id集合查所有id数据 的sql
 select t.*, r.article_id from tags t left join article_tag r on t.id =  r.tag_id  where r.article_id in (${ids});
 
-#### refreshToken机制 （太麻烦了，不搞）
-为什么需要刷新令牌
-如果token超时时间很长，比如14天，由于第三方软件获取受保护资源都要带着token，这样token的攻击面就比较大。
-如果token超时时间很短，比如1个小时，那其超时之后就需要用户再次授权，这样的频繁授权导致用户体验不好。
-引入refreshToken，就解决了token设置时间比较长，容易泄露造成安全问题，设置时间比较短，又需要频繁让用户授权的矛盾。
-#### 刷新过程
-用户通过用户名和密码发送登录请求；
-服务端验证，验证成功返回一个签名的 token和refreshToken 给客户端；
-客户端储存token, 并且每次请求都会附带它；
-服务端验证token 有效性并返回数据；
-当服务端验证token即将失效，再返回数据的同时带一个即将过期的标志位通知客户端需要刷新令牌；
-客户端收到刷新标志时，再下一次访问的时候携带token和refreshToken或者单独请求刷新接口；
-服务端验证token即将过期且refreshToken有效性后返回新的token和请求数据；
-客户端储存新token, 并且每次请求都会附带它。
-
-#### 刷新过程 2
+#### token机制
 登录成功；
-生成 token和refreshToken，只将token响应给接口，同时将 refreshToken 和 token 存给用户表；
-token时效30min, refreshToken时效一天
-前端每次请求接口，如果接口 响应头 里有token，就替换掉浏览器缓存上存的
+生成token，时效为2h。(加密)响应给接口，前端存在浏览器缓存，
+同时存到redis，用户名作为key，token作为值，并设置redis key的过期时间，也为2h；
+前端每次请求接口，如果接口的响应头里有token，就替换掉浏览器缓存上存的token
 接口收到请求校验token：
-1.如果有效正常响应，并且更新token,refreshToken时效
-2.如果token失效,用token查询对应的refreshToken，
-  2.1如果refreshToken有效就用它来刷新token，
-  2.2如果refreshToken失效 就返回 无效token，前端收到跳转登录
-
-### 粗暴的设计: 后台系统token登陆，暂时不考虑用redis
-登录时，将token与过期时间存到用户表，
-校验token时，如果当前时间与token存的时间超过2小时，就过期，就清掉token和时间，重新登录。
-如果有效就更新时间和token，并且从header响应出去，前端替换。
+1.接收到token，（解密）解码获取到token里用户名
+2.根据用户名查询redis，如果差不到就是redis的key失效了，就响应失效。
+3.如果查到了，说明redis没失效，那就根据解码的信息判断token自身是否失效
+  如果token自身失效：就重新生成一个token，重新存到redis。存法一致：用户名作为key，token作为值，过期时间2h，
+  如果token自身没失效：就更新redis key的过期时间。
 
 ### cookie
 // domain: 域名 
@@ -397,25 +352,21 @@ token时效30min, refreshToken时效一天
 // httpOnly：是微软对 COOKIE 做的扩展。
 // 如果在 COOKIE 中设置了“httpOnly”属性，则通过程序（JS 脚本、applet 等）将无法读取到COOKIE 信息，防止 XSS 攻击产生
 // singed：表示是否签名cookie, 设为true 会对这个 cookie 签名，这样就需要用 res.signedCookies 而不是 res.cookies 访问它。被篡改的签名 cookie 会被服务器拒绝，并且 cookie 值会重置为它的原始值   
-
+### 定时任务 node-schedule
+```
+// 每天的凌晨0点0分0秒触发
+schedule.scheduleJob('0 0 0 * * *', () => {
+  // do something
+});
+```
 ### 浅尝redis。。
-登录时，将token与过期时间存到redis，
-校验token时，如果当前时间与token存的时间expires_time, 超过2小时，就过期，就清掉token和时间，重新登录。
-如果有效就更新时间和token，并且从header响应出去，前端替换。
-
-调整：可以直接给redis的key设置过期，取不到就失效，不需要单独存expires_time
-
 参考文章：
 https://www.runoob.com/redis/redis-install.html
 https://www.cnblogs.com/huilinmumu/p/15979459.html
 https://zhuanlan.zhihu.com/p/405936576
 https://www.51cto.com/article/477692.html
 使用： 
-https://www.jianshu.com/p/8bb24a9a1649
-https://www.jianshu.com/p/befdb525978d
-https://www.cnblogs.com/ygunoil/p/15048238.html
-https://zhuanlan.zhihu.com/p/405936576
-这个靠谱：https://blog.csdn.net/dongkeai/article/details/127462318
+https://blog.csdn.net/dongkeai/article/details/127462318
 
 mac redis:
 1.brew services stop redis 

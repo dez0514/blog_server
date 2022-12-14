@@ -4,6 +4,9 @@ const dayjs = require('dayjs')
 const query = require('../utils/pool_async')
 const json = require('../utils/response')
 const util = require('../utils/util')
+const redisCache = require('../redis/cache')
+const configOption = require('../config/config')
+const viewsExpires = configOption.viewsExpires
 // 文章列表 (分页要查对应条件下的总条数)
 // 1. 首页查询： 最新(默认就时间降序),最热（ishot），最热按照views降序，导航标签按照tag查询
 // 2. keywords 检索匹配, 查 title,extra_title,文章的标签(关联表) 存在
@@ -226,36 +229,13 @@ router.get('/article_detail', async function (req, res, next) {
     }
     // 查询文章浏览状态
     const ip = req.ipInfo.ip || req.ip
-    const vsql = `select id,view_time from view_ips where view_ip=? and article_id=?`
-    const viewRes = await query(vsql, [ip, id])
-    let isView = false // 是否浏览过, 默认没有
-    if(viewRes.length > 0) {
-      const nowtime = new Date().getTime()
-      const lasttime = new Date(viewRes[0] && viewRes[0].view_time).getTime()
-      isView = (nowtime - lasttime) <= 24 * 60 * 60 * 1000 // 如果过期，可以再计算浏览量
-      // 更新view_time
-      if(!isView) {
-        const vuSql = `update view_ips set view_time=? where id=?`
-        const viewid = viewRes[0] && viewRes[0].id
-        const newtime = dayjs(new Date()).format('YYYY-MM-DD HH:mm:ss')
-        const upvRes = await query(vuSql, [newtime,viewid])
-        if(upvRes && upvRes.affectedRows && upvRes.affectedRows === 0) {
-          json(res, 1, upvRes, '更新浏览量数据失败!')
-          return
-        }
-      }
-    } else {
-      isView = false
-      // 插入数据 view_ips
-      const inSql = `insert into view_ips(view_ip, article_id, view_time) values(?,?,?);`
-      const view_time = dayjs(new Date()).format('YYYY-MM-DD HH:mm:ss')
-      const viewResult = await query(inSql, [ip, id, view_time])
-      if(viewResult && viewResult.affectedRows && viewResult.affectedRows === 0) {
-        json(res, 1, viewResult, '更新浏览量数据失败!')
-        return
-      }
+    const redisView = await redisCache.get(`views_${ip}_${id}`)
+    if(!redisView) { // 访问+1
+      await redisCache.set(`views_${ip}_${id}`, ip)
     }
-    if(!isView) {
+    // 更新过期时间
+    await redisCache.expire(`views_${ip}_${id}`, viewsExpires)
+    if(!redisView) {
       const vwsql = `update articles set views=views + 1 where id=?`
       const result = await query(vwsql, [id])
       if(result && result.affectedRows && result.affectedRows === 0) {
@@ -284,14 +264,7 @@ router.get('/article_detail', async function (req, res, next) {
     // 查询文章点赞状态
     const ssql = `select id,like_time from like_ips where like_ip=? and article_id=?`
     const likeRes = await query(ssql, [ip, id])
-    let isLike = false // 是否点赞过, 默认没有
-    if(likeRes.length > 0) {
-      const nowtime = new Date().getTime()
-      const lasttime = new Date(likeRes[0] && likeRes[0].like_time).getTime()
-      isLike = (nowtime - lasttime) <= 24 * 60 * 60 * 1000
-    } else {
-      isLike = false
-    }
+    const isLike = likeRes.length > 0 // 是否点赞过
     json(res, 0, { ...data, hasLike: isLike }, '查询成功')
   } catch (err) {
     json(res, 1, err, '查询失败!')
@@ -312,34 +285,18 @@ router.post('/like', async function (req, res, next) {
     const ip = req.ipInfo.ip || req.ip
     const likeRes = await query(ssql, [ip, id])
     if(likeRes.length > 0) {
-      const nowtime = new Date().getTime()
-      const lasttime = new Date(likeRes[0] && likeRes[0].like_time).getTime()
-      let isLike = (nowtime - lasttime) <= 24 * 60 * 60 * 1000
-      if (isLike) {
-        json(res, 1, null, '您已经点过赞了!')
-        return
-      }
-      // 过期了，可以继续点赞
-      const likeid = likeRes[0] && likeRes[0].id
-      const newtime = dayjs(new Date()).format('YYYY-MM-DD HH:mm:ss')
-      const usql = `update like_ips set like_time=? where id=?`
-      const upRes = await query(usql, [newtime,likeid])
-      if(upRes && upRes.affectedRows && upRes.affectedRows === 0) {
-        json(res, 1, upRes, '点赞失败!')
-        return
-      }
-    } else {
-      const inSql = `insert into like_ips(like_ip, article_id, like_time) values(?,?,?);`
-      const like_time = dayjs(new Date()).format('YYYY-MM-DD HH:mm:ss')
-      const likeResult = await query(inSql, [ip, id, like_time])
-      if(likeResult && likeResult.affectedRows && likeResult.affectedRows === 0) {
-        json(res, 1, likeResult, '点赞失败!')
-        return
-      }
+      json(res, 1, null, '您已经点过赞了!')
+      return
+    }
+    const inSql = `insert into like_ips(like_ip, article_id, like_time) values(?,?,?);`
+    const like_time = dayjs(new Date()).format('YYYY-MM-DD HH:mm:ss')
+    const likeResult = await query(inSql, [ip, id, like_time])
+    if(likeResult && likeResult.affectedRows && likeResult.affectedRows === 0) {
+      json(res, 1, likeResult, '点赞失败!')
+      return
     }
     const sql = `update articles set likes=likes + 1 where id=?`
     const result = await query(sql, [id])
-    console.log(result)
     if(result && result.affectedRows && result.affectedRows === 0) {
       json(res, 1, result, '点赞失败!')
       return

@@ -15,11 +15,8 @@ const commentApi = require('./router/comments')
 const useToken = require('./utils/useToken')
 const useCrypto = require('./utils/useCrypto')
 const json = require('./utils/response')
-const query = require('./utils/pool_async')
 const cookieParser = require('cookie-parser')
-const schedule = require('node-schedule');
 const expressip = require('express-ip');
-const dayjs = require('dayjs')
 const configOption = require('./config/config')
 const redisCache = require('./redis/cache')
 app.use(expressip().getIpInfoMiddleware); // req.ipInfo
@@ -108,17 +105,6 @@ app.use('/api/resume', resumeApi)
 app.use('/api/file', fileApi)
 app.use('/api/user', userApi)
 app.use('/api/comment', commentApi)
-
-// 定时任务 // 每天的凌晨0点0分0秒触发
-schedule.scheduleJob('0 0 0 * * *', () => {
-  console.log('===定时清除点赞和浏览过期的数据!===');
-  // 清除 like_ips, view_ips 表里 过期数据
-  const exp_stamp = new Date().getTime() - 24 * 60 * 60 * 1000
-  const exp_date = dayjs(new Date(exp_stamp)).format('YYYY-MM-DD HH:mm:ss')
-  const sql = `delete from like_ips where like_time <= ?`
-  const sqlv = `delete from view_ips where view_time <= ?;`
-  query(`${sql};${sqlv}`, [exp_date, exp_date])
-});
 
 const port = process.env.PORT
 app.listen(port, () => {
