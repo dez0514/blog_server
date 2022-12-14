@@ -12,10 +12,10 @@ const resumeApi = require('./router/resume')
 const fileApi = require('./router/file')
 const userApi = require('./router/user')
 const commentApi = require('./router/comments')
-const tokenjs = require('./utils/token')
+const useToken = require('./utils/useToken')
+const useCrypto = require('./utils/useCrypto')
 const json = require('./utils/response')
 const query = require('./utils/pool_async')
-// const utils = require('./utils/util')
 const cookieParser = require('cookie-parser')
 const schedule = require('node-schedule');
 const expressip = require('express-ip');
@@ -23,7 +23,7 @@ const dayjs = require('dayjs')
 const configOption = require('./config/config')
 const redisCache = require('./redis/cache')
 app.use(expressip().getIpInfoMiddleware); // req.ipInfo
-const { tokenExpires, dayjsExpiresNum, dayjsExpiresUnit } = configOption.tokenExpOptions
+const { tokenExpires, redisTtl } = configOption.tokenExpOptions
 dotenv.config({
   path: path.join(__dirname, './config/config.env')
 });
@@ -67,71 +67,34 @@ app.use('/api', async(req, res, next) => {
     next()
     return
   }
-  const oldDecrypToken = (req.headers && req.headers.token) || '' // 传过来的是加密的
-  // console.log('old des==', oldDecrypToken)
-  const decoded = tokenjs.decodeToken(oldDecrypToken)
+  const receiveToken = (req.headers && req.headers.token) || '' // 传过来的是加密的
+  // console.log('old des==', receiveToken)
+  // 先解密，再解析
+  const decryptToken = useCrypto.decryption(receiveToken)
+  const decoded = useToken.decodeToken(decryptToken)
   const username = (decoded && decoded.username) || ''
   // console.log('decoded info==', decoded)
   if (!username) {
     json(res, 417, null, 'invalid token!')
     return
   }
-  // 查询redis, 对应的username的token过期时间
-  const redisInfoStr = await redisCache.get(username)
-  if(!redisInfoStr || !JSON.parse(redisInfoStr) || !JSON.parse(redisInfoStr).expires_time) {
+  // 查询redis, 如果redis中失效就拿不到, 或者 解密token ！== redisToken
+  const redisToken = await redisCache.get(username)
+  if(!redisToken || redisToken !== decryptToken) {
     json(res, 417, null, 'invalid token!')
     return
   }
-  const dbExp = JSON.parse(redisInfoStr).expires_time
-  // // 查询username的token(未加密的)，decode出来的信息 和 接口传入的一致 就通过
-  // const sql = 'SELECT token,expires_time FROM users WHERE username=?;'
-  // const result = await query(sql, [username])
-  // // console.log('search result==', result)
-  // if(!result || result.length === 0 || !result[0].token) {
-  //   json(res, 417, null, 'invalid token!')
-  //   return
-  // }
-  // const dbExp = result[0].expires_time
-  const isOutExp = !dbExp || (dayjs(dbExp).valueOf() <= (new Date().getTime())) // 过期
-  if(isOutExp) {
-    json(res, 417, null, 'invalid token!')
-    return
-  }
-  // console.log('isOutExp==', isOutExp, dbExp)
-  // 没过期，有接口操作时 更新时间，如果token本身过期了就换token
-  const isTokenExp = (decoded && (decoded.exp * 1000) > (new Date().getTime())) || false
-  const new_expires_time = dayjs().add(dayjsExpiresNum, dayjsExpiresUnit).format('YYYY-MM-DD HH:mm:ss')
-  if(isTokenExp) { // token本身没过期
-    // console.log('isTokenExp==', isTokenExp)
-    const obj = {
-      token: redisInfoStr.token,
-      expires_time: new_expires_time
-    }
-    await redisCache.set(username, JSON.parse(obj))
-    // const updateSql = `UPDATE users SET expires_time=? WHERE username=?;`
-    // const updateResult = await query(updateSql, [new_expires_time, username])
-    // // console.log('updateResult result==', updateResult)
-    // if(updateResult && updateResult.affectedRows && updateResult.affectedRows === 0) {
-    //   json(res, 417, null, '网络错误，数据更新失败!')
-    //   return
-    // }
+  // redis 没过期时，判断token自身是否过期， token自身没过期就只更新redis过期时间,过期就换token且更新redis过期时间
+  const isTokenExp = (decoded && (decoded.exp * 1000) > Date.now()) || false
+  if(isTokenExp) {
+    await redisCache.expire(username, redisTtl)
     next()
   } else {
-    // console.log('isTokenExp222==', isTokenExp)
-    const newTokenInfo = tokenjs.getToken({ username }, tokenExpires) // 新创建token 存未加密的 ，响应加密的
-    const obj = {
-      token: newTokenInfo.token,
-      expires_time: new_expires_time
-    }
-    await redisCache.set(username, JSON.parse(obj))
-    // const updateSql = `UPDATE users SET token=?,expires_time=? WHERE username=?;`
-    // const updateResult = await query(updateSql, [newTokenInfo.token, new_expires_time, username]) 
-    // // console.log('updateResult result222==', updateResult)
-    // if(updateResult && updateResult.affectedRows && updateResult.affectedRows === 0) {
-    //   json(res, 417, null, '网络错误，数据更新失败!')
-    //   return
-    // }
-    res.setHeader('token', newTokenInfo.encrypted)
+    const newToken = useToken.getToken({ username }, tokenExpires) // 存未加密的
+    const newEncrypted = useCrypto.encryption(newToken) // 响应加密的
+    await redisCache.set(username, newToken)
+    await redisCache.expire(username, redisTtl)
+    res.setHeader('token', newEncrypted)
     next()
   }
 })

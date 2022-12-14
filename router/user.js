@@ -2,26 +2,18 @@ const express = require('express')
 const router = express.Router()
 const query = require('../utils/pool_async')
 const json = require('../utils/response')
-// const jwt = require('jsonwebtoken')
-const tokenjs = require('../utils/token')
+const useCrypto = require('../utils/useCrypto')
+const useToken = require('../utils/useToken')
 const axios = require('axios')
 const utils = require('../utils/util')
 const configOption = require('../config/config')
-const dayjs = require('dayjs')
 const redisCache = require('../redis/cache')
 const cookieOptions = {
   ...configOption.cookieOptions,
-  expires: new Date(Date.now() + 2 * 60 * 60 * 1000) // 2hours
+  expires: new Date(Date.now() + configOption.expires) // 2hours
 }
-const { tokenExpires, dayjsExpiresNum, dayjsExpiresUnit } = configOption.tokenExpOptions
-// domain: 域名 
-// Path： 表示 cookie 影响到的路，如 path=/。如果路径不能匹配时，浏览器则不发送这个 Cookie
-// Expires： 过期时间（秒），在设置的某个时间点后该 Cookie 就会失效，如 expires=Wednesday, 9-Nov-99 23:12:40 GMT  
-// maxAge： 最大失效时间（毫秒），设置在多少后失效
-// secure：当 secure 值为 true 时，cookie 在 HTTP 中是无效，在 HTTPS 中才有效    
-// httpOnly：是微软对 COOKIE 做的扩展。
-// 如果在 COOKIE 中设置了“httpOnly”属性，则通过程序（JS 脚本、applet 等）将无法读取到COOKIE 信息，防止 XSS 攻击产生
-// singed：表示是否签名cookie, 设为true 会对这个 cookie 签名，这样就需要用 res.signedCookies 而不是 res.cookies 访问它。被篡改的签名 cookie 会被服务器拒绝，并且 cookie 值会重置为它的原始值   
+const { tokenExpires, redisTtl } = configOption.tokenExpOptions
+const passwordSecret = configOption.passwordSecret
 
 // 注册
 router.post('/register', async function (req, res) {
@@ -39,8 +31,9 @@ router.post('/register', async function (req, res) {
       return
     }
     const sql = `INSERT INTO users(username, password) VALUES(?,?);`
-    //todo: 加密
-    const vals = [username, password]
+    // 存密码时加密
+    const pwd = useCrypto.encryption(password, passwordSecret)
+    const vals = [username, pwd]
     const insertData = await query(sql, vals)
     if (insertData && insertData.affectedRows && insertData.affectedRows > 0) {
       json(res, 0, insertData, '注册成功!')
@@ -62,33 +55,22 @@ router.post('/login', async function (req, res) {
     const sqlQuery = `SELECT username, password FROM users WHERE username=?;`
     const data = await query(sqlQuery, username)
     console.log(data[0])
-    if (!data || data.length === 0) {
+    if (!data || data.length === 0 || !data[0].username || !data[0].password) {
       json(res, 1, null, '用户不存在!')
       return
     }
-    if (!data[0].username || data[0].password !== password) {
+    // 密码解密再判断
+    const pwd = useCrypto.decryption(data[0].password, passwordSecret)
+    if (!data[0].username || password !== pwd) {
       json(res, 1, null, '用户名或密码不正确!')
       return
     }
-    // tokenExpires, dayjsExpiresNum, dayjsExpiresUnit
-    const { token, encrypted } = tokenjs.getToken({ username }, tokenExpires) // 存未加密的 ，响应加密的
-    const expires_time = dayjs().add(dayjsExpiresNum, dayjsExpiresUnit).format('YYYY-MM-DD HH:mm:ss')
-    // 存到redis: username, token, expires_time
-    const obj = { token, expires_time }
-    await redisCache.set(username, JSON.stringify(obj))
+    const token = useToken.getToken({ username }, tokenExpires) // 存未加密的
+    const encrypted = useCrypto.encryption(token) // 响应加密的
+    // 存到redis: username做key, token做value, 并给redis的key设置过期
+    await redisCache.set(username, token)
+    await redisCache.expire(username, redisTtl)
     json(res, 0, { token: encrypted, userinfo: { username } }, '登录成功!')
-    // const updateSql = `UPDATE users SET token=?,expires_time=? WHERE username=?;`
-    // const updateResult = await query(updateSql, [token, expires_time, username])
-    // if (updateResult && updateResult.affectedRows && updateResult.affectedRows > 0) {
-    //   json(res, 0, {
-    //     token: encrypted,
-    //     userinfo: {
-    //       username
-    //     }
-    //   }, '登录成功!')
-    // } else {
-    //   json(res, 1, updateResult, '登录失败!')
-    // }
   } catch (err) {
     console.log(err)
     json(res, 1, err, '登录失败!')
@@ -97,7 +79,9 @@ router.post('/login', async function (req, res) {
 
 router.get('/userinfo', function (req, res) {
   const token = req.headers.token || ''
-  const data = tokenjs.decodeToken(token)
+  // 先解密
+  const decryptToken = useCrypto.decryption(token)
+  const data = useToken.decodeToken(decryptToken)
   const username = data.username || ''
   // 若有额外信息再去查users表
   if(!username) {
@@ -113,19 +97,12 @@ router.get('/userinfo', function (req, res) {
 router.post('/logout', async function (req, res) {
   try {
     const token = req.headers.token || ''
-    const data = tokenjs.decodeToken(token)
+    const decryptToken = useCrypto.decryption(token)
+    const data = useToken.decodeToken(decryptToken)
     const username = data.username
     // 清除redis上的信息
     await redisCache.del(username)
     json(res, 0, null, '退出成功!')
-    // const sql = `UPDATE users SET token=NULL,expires_time=NULL WHERE username=?`
-    // const result = await query(sql, [username])
-    // console.log(result)
-    // if (result && result.affectedRows && result.affectedRows > 0) {
-    //   json(res, 0, null, '退出成功!')
-    // } else {
-    //   json(res, 1, result, '退出失败!')
-    // }
   } catch (err) {
     json(res, 1, err, '退出失败!')
   }

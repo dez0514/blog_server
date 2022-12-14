@@ -1,14 +1,19 @@
+const NodeRSA = require('node-rsa');
+const secretkey = new NodeRSA({ b: 512 }).exportKey('public');
+// 注意：每次保存代码时，此盐值就不一样了，所以登录的token加解密都不一样了，会跳出登录
 module.exports = {
+  secret: secretkey,
+  passwordSecret: 'password', // 密码加密的盐值
   tokenExpOptions: {
-    tokenExpires: '4h', // "2 days", "10h", "7d"， 创建token时用, token自身有效时间
-    dayjsExpiresNum: 2,  // 存表时 计算用。存在表中的有效时间（存表时的当前时间 + dayjsExpiresNum）
-    dayjsExpiresUnit: 'hour', // day, hour, second
+    tokenExpires: '2h', // "2 days", "10h", "7d"， 创建token时用, token自身有效时间
+    redisTtl: 2 * 60 * 60 // 秒数 ，redis key 的过期时间2h
   },
   cookieOptions: {
     domain: 'localhost',
     path: '/',
     httpOnly: false,
-    secure: false
+    secure: false,
+    expires: 2 * 60 * 60 * 1000 // 使用时用当前时间加此时间
     // maxAge: 200000,
   },
   github: {

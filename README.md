@@ -34,14 +34,12 @@
 | id            | int          | NO   | PRI | NULL    | auto_increment |
 | username      | varchar(30)  | NO   | UNI | NULL    |                |
 | password      | varchar(100) | NO   |     | NULL    |                |
-| token         | varchar(300) | YES  |     | NULL    |                |
-| expires_time  | datetime     | YES  |     | NULL    |                |
 +---------------+--------------+------+-----+---------+----------------+
 ```
 CREATE TABLE users(id INT NOT NULL AUTO_INCREMENT,  username varchar(30) NOT NULL unique, password varchar(100) NOT NULL, token varchar(300), expires_time datetime, PRIMARY KEY ( id ))ENGINE=InnoDB DEFAULT CHARSET=utf8;
 
-ALTER TABLE 表名 ADD 新字段名 数据类型 [约束条件] FIRST;
-alter table users add expires_time datetime
+alter table users drop column token;
+alter table users drop column expires_time;
 ```
 #### articles
 +-------------+--------------+------+-----+-------------------+-------------------+
@@ -385,15 +383,28 @@ token时效30min, refreshToken时效一天
   2.1如果refreshToken有效就用它来刷新token，
   2.2如果refreshToken失效 就返回 无效token，前端收到跳转登录
 
-### 最终还是粗暴的设计: 后台系统token登陆，暂时不考虑用redis
+### 粗暴的设计: 后台系统token登陆，暂时不考虑用redis
 登录时，将token与过期时间存到用户表，
 校验token时，如果当前时间与token存的时间超过2小时，就过期，就清掉token和时间，重新登录。
 如果有效就更新时间和token，并且从header响应出去，前端替换。
 
-### 看看redis算了。。
+### cookie
+// domain: 域名 
+// Path： 表示 cookie 影响到的路，如 path=/。如果路径不能匹配时，浏览器则不发送这个 Cookie
+// Expires： 过期时间（秒），在设置的某个时间点后该 Cookie 就会失效，如 expires=Wednesday, 9-Nov-99 23:12:40 GMT  
+// maxAge： 最大失效时间（毫秒），设置在多少后失效
+// secure：当 secure 值为 true 时，cookie 在 HTTP 中是无效，在 HTTPS 中才有效    
+// httpOnly：是微软对 COOKIE 做的扩展。
+// 如果在 COOKIE 中设置了“httpOnly”属性，则通过程序（JS 脚本、applet 等）将无法读取到COOKIE 信息，防止 XSS 攻击产生
+// singed：表示是否签名cookie, 设为true 会对这个 cookie 签名，这样就需要用 res.signedCookies 而不是 res.cookies 访问它。被篡改的签名 cookie 会被服务器拒绝，并且 cookie 值会重置为它的原始值   
+
+### 浅尝redis。。
 登录时，将token与过期时间存到redis，
-校验token时，如果当前时间与token存的时间超过2小时，就过期，就清掉token和时间，重新登录。
+校验token时，如果当前时间与token存的时间expires_time, 超过2小时，就过期，就清掉token和时间，重新登录。
 如果有效就更新时间和token，并且从header响应出去，前端替换。
+
+调整：可以直接给redis的key设置过期，取不到就失效，不需要单独存expires_time
+
 参考文章：
 https://www.runoob.com/redis/redis-install.html
 https://www.cnblogs.com/huilinmumu/p/15979459.html
