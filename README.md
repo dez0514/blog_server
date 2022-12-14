@@ -369,8 +369,14 @@ https://www.51cto.com/article/477692.html
 https://blog.csdn.net/dongkeai/article/details/127462318
 
 mac redis:
-1.brew services stop redis 
+1.brew services start redis / brew services stop redis
 2.cd usr/local/bin
 3.redis-cli -h 127.0.0.1 -p 6379
 备注：修改密码 config set requirepass 'xxx'
 检查密码： auth xxx
+
+windows:
+安装redis之后
+启动终端 cd redis目录： 执行 redis-cli.exe -h 127.0.0.1 -p 6379
+新开一个cmd： cd cd redis目录: 执行 redis-server.exe redis.windows.conf
+安装redisClient，打开.exe连接 可查询
