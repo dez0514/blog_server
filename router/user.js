@@ -8,7 +8,7 @@ const axios = require('axios')
 const utils = require('../utils/util')
 const configOption = require('../config/config')
 const dayjs = require('dayjs')
-const redisCache = require('./redis/cache')
+const redisCache = require('../redis/cache')
 const cookieOptions = {
   ...configOption.cookieOptions,
   expires: new Date(Date.now() + 2 * 60 * 60 * 1000) // 2hours
