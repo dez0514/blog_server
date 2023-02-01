@@ -380,3 +380,14 @@ windows:
 启动终端 cd redis目录： 执行 redis-cli.exe -h 127.0.0.1 -p 6379
 新开一个cmd： cd cd redis目录: 执行 redis-server.exe redis.windows.conf
 安装redisClient，打开.exe连接 可查询
+
+redis连接不上，可能是以下原因：
+1. 上次没关闭，需要关闭再重连 参考：https://blog.csdn.net/sinat_32857543/article/details/124230394
+2. node版本切走了，忘记切回安装使用redis-server时的版本
+
+redis命令: http://doc.redisfans.com/
+1. keys *
+2. keys prefix* // 前缀模糊查询
+3. get [keyname] // 例如 get zwd
+4. set [keyname] [value] // 例如 set zwd 'testvalue'
+
