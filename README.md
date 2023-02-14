@@ -391,3 +391,9 @@ redis命令: http://doc.redisfans.com/
 3. get [keyname] // 例如 get zwd
 4. set [keyname] [value] // 例如 set zwd 'testvalue'
 
+#### nodejs 打断点调试
+参考：https://blog.csdn.net/weixin_44899507/article/details/112544405
+1. node --inspect app.js
+2. 浏览器地址栏：chrome://inspect或者about:inspect
+3. 点击inspect按钮打开调试界面
+
