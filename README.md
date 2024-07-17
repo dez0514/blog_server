@@ -370,6 +370,7 @@ https://blog.csdn.net/dongkeai/article/details/127462318
 
 mac redis:
 1.brew services start redis / brew services stop redis
+2.1 command+shift+G
 2.cd usr/local/bin
 3.redis-cli -h 127.0.0.1 -p 6379
 备注：修改密码 config set requirepass 'xxx'
