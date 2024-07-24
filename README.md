@@ -301,6 +301,7 @@ redis.expire(`view_${ip}_${articleID}`, exp)
 
 ### mysql & database helper
 cmd：
+0. source ~/.bash_profile
 1. mysql -u root -p
 2. ******
 命令：

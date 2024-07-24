@@ -10,7 +10,7 @@ const configOption = require('../config/config')
 const redisCache = require('../redis/cache')
 const cookieOptions = {
   ...configOption.cookieOptions,
-  expires: new Date(Date.now() + configOption.expires) // 2hours
+  expires: new Date(Date.now() + configOption.cookieOptions.expires) // 2hours
 }
 const { tokenExpires, redisTtl } = configOption.tokenExpOptions
 const passwordSecret = configOption.passwordSecret
